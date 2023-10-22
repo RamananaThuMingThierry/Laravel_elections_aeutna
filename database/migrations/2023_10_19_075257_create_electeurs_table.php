@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('photo')->nullable();
             $table->integer('numero_carte')->nullable()->unique();
             $table->string('nom', 255)->nullable();
-            $table->string('prenom', 255);
+            $table->string('prenom', 255)->nullable();
             $table->date('ddn')->nullable()->comment('Date de naissance');
             $table->string('ldn', 255)->nullable()->comment('Lieu de naissance');
             $table->string('sexe', 10)->nullable()->comment('Genre (Male ou Femelle)');

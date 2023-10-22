@@ -32,12 +32,18 @@ Route::middleware(['auth:sanctum'])->group(function(){
 
     // Créer un électeur membres AEUTNA
     Route::post('store-electeur', [ElecteursController::class, 'store']);   
+
+    // Créer un électeur membres AEUTNA
+    Route::get('recherche_membres/{propriete}/{value}', [ElecteursController::class, 'recherche_membres']);   
     
     // Créer un électeur nouveau bachelier
     Route::post('nouveau-bachelier-electeur', [ElecteursController::class, 'nouveau_bachelier']);   // Créer un nouveau bachelier
     Route::get('show-electeur/{id}', [ElecteursController::class, 'show']); // Afficher un électeur
+    Route::get('approuve-membres/{id}', [ElecteursController::class, 'approuve_membres']); // Approuve membres
     Route::get('edit-electeur/{id}', [ElecteursController::class, 'edit']); // Modifier un électeur
     Route::put('update-electeur/{id}', [ElecteursController::class, 'update']); // Modifier un électeur
+
+    Route::post('valide_membres_electeurs/{id}', [ElecteursController::class, 'valide_membres_electeurs']); // Approuve membres électeur
     Route::delete('delete-electeur/{id}', [ElecteursController::class, 'destroy']); // Supprimer une électeur
    
     // Déconnexion

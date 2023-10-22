@@ -20,7 +20,7 @@ class electeurs extends Model
         'ldn',
         'sexe',
         'cin',
-        'delivrance',
+        'delivrance_cin',
         'filieres',
         'niveau',
         'adresse',

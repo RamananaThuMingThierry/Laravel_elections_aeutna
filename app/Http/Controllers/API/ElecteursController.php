@@ -8,6 +8,8 @@ use App\Http\Controllers\Controller;
 use DateTime;
 use Illuminate\Support\Facades\Date;
 
+use function PHPUnit\Framework\isEmpty;
+
 class ElecteursController extends Controller
 {
     /**
@@ -17,12 +19,59 @@ class ElecteursController extends Controller
 
     public function membres()
     {
-        $membres = electeurs::where('numero_carte', '<>', null)->get();
+        $membres = electeurs::orderBy('numero_carte', 'desc')->where('numero_carte', '<>', null)
+            ->where('status', 0)
+            ->get();
         return response()->json([
             'status' => 200,
             'nombres_membres' => $membres->count(),
             'electeurs_membres' => $membres
         ]);
+    }
+
+    public function recherche_membres(string $propriete, string $value){ 
+        
+        $bool = false;
+        if($propriete == 'numero_carte'){
+            $bool = true;
+        }else if($propriete == 'cin'){
+            $bool = true;
+        }
+
+        if($bool){
+            $membres = electeurs::where($propriete, $value)->where('status', 1)->get();
+            if($membres->count() != 0){
+                return response()->json([
+                    'status' => 400,
+                    'message' => 'Vous avez déjà votes !'
+                ]); 
+            }else{
+                $membres = electeurs::where($propriete, $value)->where('status', 0)->get();    
+            }
+        }else{
+
+            $membres = electeurs::where($propriete,'like',"%$value%")->where('status', 1)->get();
+            if($membres->count() != 0){
+                return response()->json([
+                    'status' => 400,
+                    'message' => 'Vous avez déjà votes !'
+                ]); 
+            }else{
+                $membres = electeurs::where($propriete,'like', "%$value%")->where('status', 0)->get();    
+            }
+        }
+
+        if($membres->count() != 0){
+             return response()->json([
+                 'status' => 200,
+                 'recherche_membres' => $membres
+             ]);
+        }else{
+            return response()->json([
+                'status' => 404,
+                'message' => 'Aucun résultat !'
+            ]);
+        }
     }
 
     public function liste_des_electeurs_membres()
@@ -66,23 +115,33 @@ class ElecteursController extends Controller
      */
     public function store(Request $request)
     {
-        
+        $photo = $request->hasFile("photo");
+        $numero_carte = $request->numero_carte;
+        $nom = $request->nom;
+        $prenom = $request->prenom;
+        $ddn = $request->ddn;
+        $ldn = $request->ldn;
+        $sexe = $request->sexe;
+        $cin = $request->cin;
+        $delivrance = $request->delivrance;
+        $filieres = $request->filieres;
+        $niveau = $request->niveau;
+        $adresse = $request->adresse;
+        $contact = $request->contact;
+        $axes = $request->axes;
+        $sympathisant = $request->sympathisant;
+        $facebook = $request->facebook;
+        $date_inscription = $request->date_inscription;
+
+
         $electeur = new electeurs();
 
         $existes = electeurs::where('numero_carte', $request->numero_carte)
                   ->exists();
                   
         // Vérifier si cet électeurs exists dans la base de données
-        if(!$existes){
-                
-            if($request->numero_carte == null){
-                return response()->json([
-                    'status' => 404,
-                    'message' => 'Veuillez saisir le numéro de carte !',
-                ]); 
-            }
-            
-            if($request->hasFile("photo")){
+        if(!$existes){               
+            if($photo){
                 $file = $request->file('photo');
                 $extension = $file->getClientOriginalExtension();
                 $filename = time() . '.' .$extension;
@@ -91,22 +150,22 @@ class ElecteursController extends Controller
             }else{
                 $electeur->photo = null;
             }
-            $electeur->numero_carte = $request->numero_carte;
-            $electeur->nom = $request->nom;
-            $electeur->prenom = $request->prenom;
-            $electeur->ddn = $request->ddn;
-            $electeur->ldn = $request->ldn;
-            $electeur->sexe = $request->sexe;
-            $electeur->cin = $request->cin;
-            $electeur->delivrance_cin = $request->delivrance_cin;
-            $electeur->filieres = $request->filieres;
-            $electeur->niveau = $request->niveau;
-            $electeur->adresse = $request->adresse;
-            $electeur->contact = $request->contact;
-            $electeur->axes = $request->axes;
-            $electeur->sympathisant = $request->sympathisant;
-            $electeur->facebook = $request->facebook;
-            $electeur->date_inscription = $request->date_inscription;
+            $electeur->numero_carte = $numero_carte;
+            $electeur->nom = $nom;
+            $electeur->prenom = $prenom;
+            $electeur->ddn = $ddn;
+            $electeur->ldn = $ldn;
+            $electeur->sexe = $sexe;
+            $electeur->cin = $cin;
+            $electeur->delivrance_cin = $delivrance;
+            $electeur->filieres = $filieres;
+            $electeur->niveau = $niveau;
+            $electeur->adresse = $adresse;
+            $electeur->contact = '0'.$contact;
+            $electeur->axes = $axes;
+            $electeur->sympathisant = $sympathisant ?? 'Non';
+            $electeur->facebook = $facebook;
+            $electeur->date_inscription = $date_inscription;
             $electeur->save();
             return response()->json([
                 'status' => 200,
@@ -115,7 +174,7 @@ class ElecteursController extends Controller
         }else{
             return response()->json([
                 'status' => 404,
-                'message' => 'Ce numéro matricule existe déjà !',
+                'message' => 'Votre numéro de carte existe déjà !',
             ]); 
         }
     }
@@ -188,19 +247,20 @@ class ElecteursController extends Controller
         }
     }
 
-    public function check_electeurs(Request $request, string $id)
-    {
+    public function valide_membres_electeurs(Request $request, string $id){
+       
         $electeur =  electeurs::find($id);
    
         if($electeur){
-            $electeur->votes = $request->votes;
-            $electeur->status = 1;
+
             $electeur->secteurs = $request->secteurs;
+            $electeur->status = 1;
+            $electeur->votes = $request->votes;
             $electeur->save();
             
             return response()->json([
                 'status' => 200,
-                'message' => 'Opération effectué !',
+                'message' => 'Opération effectuée!',
             ]);
         }else{
             return response()->json([
@@ -214,6 +274,23 @@ class ElecteursController extends Controller
      * Display the specified resource.
      */
     public function show(string $id)
+    {
+        $electeur = electeurs::find($id);
+        
+        if($electeur){
+            return response()->json([
+                'status' => 200,
+                'electeur' => $electeur
+            ]);
+        }else{
+            return response()->json([
+                'status' => 404,
+                'message' => 'Aucun résultat trouvé !'
+            ]);
+        }
+    }
+
+    public function approuve_membres(string $id)
     {
         $electeur = electeurs::find($id);
         
