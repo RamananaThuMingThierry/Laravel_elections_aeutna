@@ -290,6 +290,23 @@ class ElecteursController extends Controller
         }
     }
 
+    public function edit(string $id)
+    {
+        $membre = electeurs::find($id);
+        
+        if($membre){
+            return response()->json([
+                'status' => 200,
+                'membre' => $membre
+            ]);
+        }else{
+            return response()->json([
+                'status' => 404,
+                'message' => 'Aucun résultat trouvé !'
+            ]);
+        }
+    }
+
     public function approuve_membres(string $id)
     {
         $electeur = electeurs::find($id);
@@ -310,43 +327,66 @@ class ElecteursController extends Controller
     /**
      * Update the specified resource in storage.
      */
+
+
     public function update(Request $request, string $id)
     {
+        $autorisation = false;
+
         $electeur =  electeurs::find($id);
    
+        dd($request->numero_carte);
+
         if($electeur){
-            if($request->hasFile("photo")){
-                $file = $request->file('photo');
-                $extension = $file->getClientOriginalExtension();
-                $filename = time() . '.' .$extension;
-                $file->move("uploads/electeurs/", $filename);
-                $electeur->photo = 'uploads/electeurs/'.$filename;
-            }else{
-                $electeur->photo = null;
+
+            $existes = electeurs::where('numero_carte', $request->numero_carte)->get();
+            var_dump($existes);
+            if($existes){
+                if($electeur->numer_carte == $existes->numero_carte){
+                    $autorisation = true;
+                }
             }
-    
-            $electeur->numero_carte = $request->numero_carte;
-            $electeur->nom = $request->nom;
-            $electeur->prenom = $request->prenom;
-            $electeur->ddn = $request->ddn;
-            $electeur->ldn = $request->ldn;
-            $electeur->sexe = $request->sexe;
-            $electeur->cin = $request->cin;
-            $electeur->delivrance_cin = $request->delivrance_cin;
-            $electeur->filieres = $request->filieres;
-            $electeur->niveau = $request->niveau;
-            $electeur->adresse = $request->adresse;
-            $electeur->contact = $request->contact;
-            $electeur->axes = $request->axes;
-            $electeur->sympathisant = $request->sympathisant;
-            $electeur->facebook = $request->facebook;
-            $electeur->date_inscription = $request->date_inscription;
-            $electeur->save();
-            
-            return response()->json([
-                'status' => 200,
-                'message' => 'Modification effectuée!',
-            ]);
+
+            if($autorisation){
+                
+                if($request->photo != null){
+                        if($request->hasFile("photo")){
+                        $file = $request->file('photo');
+                        $extension = $file->getClientOriginalExtension();
+                        $filename = time() . '.' .$extension;
+                        $file->move("uploads/electeurs/", $filename);
+                        $electeur->photo = 'uploads/electeurs/'.$filename;
+                    }
+                }
+
+                $electeur->numero_carte = $request->numero_carte;
+                $electeur->nom = $request->nom;
+                $electeur->prenom = $request->prenom;
+                $electeur->ddn = $request->ddn;
+                $electeur->ldn = $request->ldn;
+                $electeur->sexe = $request->sexe;
+                $electeur->cin = $request->cin;
+                $electeur->delivrance_cin = $request->delivrance_cin;
+                $electeur->filieres = $request->filieres;
+                $electeur->niveau = $request->niveau;
+                $electeur->adresse = $request->adresse;
+                $electeur->contact = $request->contact;
+                $electeur->axes = $request->axes;
+                $electeur->sympathisant = $request->sympathisant;
+                $electeur->facebook = $request->facebook;
+                $electeur->date_inscription = $request->date_inscription;
+                $electeur->save();
+                
+                return response()->json([
+                    'status' => 200,
+                    'message' => 'Modification effectuée!',
+                ]);
+            }else{
+                return response()->json([
+                    'status' => 404,
+                    'message' => 'Ce numéro de carte appartient à une autre membre !',
+                ]);
+            }
         }else{
             return response()->json([
                 'status' => 404,

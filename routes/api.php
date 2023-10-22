@@ -41,7 +41,7 @@ Route::middleware(['auth:sanctum'])->group(function(){
     Route::get('show-electeur/{id}', [ElecteursController::class, 'show']); // Afficher un électeur
     Route::get('approuve-membres/{id}', [ElecteursController::class, 'approuve_membres']); // Approuve membres
     Route::get('edit-electeur/{id}', [ElecteursController::class, 'edit']); // Modifier un électeur
-    Route::put('update-electeur/{id}', [ElecteursController::class, 'update']); // Modifier un électeur
+    Route::post('update-electeur/{id}', [ElecteursController::class, 'update']); // Modifier un électeur
 
     Route::post('valide_membres_electeurs/{id}', [ElecteursController::class, 'valide_membres_electeurs']); // Approuve membres électeur
     Route::delete('delete-electeur/{id}', [ElecteursController::class, 'destroy']); // Supprimer une électeur
