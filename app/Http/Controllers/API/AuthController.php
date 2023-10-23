@@ -16,6 +16,10 @@ class AuthController extends Controller
         $validator = Validator::make($request->all(), [
             'email' => 'required|email',
             'password' => 'required',
+        ], [
+            'email.required' => 'Le champ d\'email est obligatoire.',
+            'email.email' => 'Le champ d\'email doit être une adresse email valide.',
+            'password.required' => 'Le champ de mot de passe est obligatoire.',
         ]);
 
         if($validator->fails()){
@@ -53,7 +57,7 @@ class AuthController extends Controller
         
         $validator = Validator::make($request->all(), [
             'pseudo' => 'required|max:191',
-            'email' => 'required|email|max:191| unique:users',
+            'email' => 'required|email|max:191|unique:users',
             'password' => 'required|min:8',
             'c_password' => 'required|min:8'
         ]);

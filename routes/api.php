@@ -14,7 +14,7 @@ Route::middleware(['auth:sanctum'])->group(function(){
     Route::get('/checkingAuthenticated', function(){
         return response()->json(
             [
-             'message' => 'You are in',
+             'message' => 'Vous êtes connecter',
              'status' => 200]);
     });
 
