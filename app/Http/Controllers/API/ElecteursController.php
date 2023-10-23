@@ -35,6 +35,12 @@ class ElecteursController extends Controller
         if($propriete == 'numero_carte'){
             $bool = true;
         }else if($propriete == 'cin'){
+            if(strlen($value) != 12){
+                return response()->json([
+                    'status' => 400,
+                    'message' => 'C.I.N invalide !'
+                ]); 
+            }
             $bool = true;
         }
 
@@ -51,6 +57,7 @@ class ElecteursController extends Controller
         }else{
 
             $membres = electeurs::where($propriete,'like',"%$value%")->where('status', 1)->get();
+
             if($membres->count() != 0){
                 return response()->json([
                     'status' => 400,
@@ -65,6 +72,58 @@ class ElecteursController extends Controller
              return response()->json([
                  'status' => 200,
                  'recherche_membres' => $membres
+             ]);
+        }else{
+            return response()->json([
+                'status' => 404,
+                'message' => 'Aucun résultat !'
+            ]);
+        }
+    }
+ 
+    public function recherche_membre_electeurs(string $propriete, string $value){ 
+        
+        $bool = false;
+        if($propriete == 'numero_carte'){
+            $bool = true;
+        }else if($propriete == 'cin'){
+            if(strlen($value) != 12){
+                return response()->json([
+                    'status' => 400,
+                    'message' => 'C.I.N invalide !'
+                ]); 
+            }
+            $bool = true;
+        }
+
+        if($bool){
+            $electeur = electeurs::where($propriete, $value)->where('status', 0)->get();
+            if($electeur->count() != 0){
+                return response()->json([
+                    'status' => 400,
+                    'message' => 'Vous n\'avez pas encore votes !'
+                ]); 
+            }else{
+                $electeur = electeurs::where($propriete, $value)->where('status', 1)->get();    
+            }
+        }else{
+
+            $electeur = electeurs::where($propriete,'like',"%$value%")->where('status', 0)->get();
+
+            if($electeur->count() != 0){
+                return response()->json([
+                    'status' => 400,
+                    'message' => 'Vous n\'avez pas encore votes !'
+                ]); 
+            }else{
+                $electeur = electeurs::where($propriete,'like', "%$value%")->where('status', 1)->get();    
+            }
+        }
+
+        if($electeur->count() != 0){
+             return response()->json([
+                 'status' => 200,
+                 'recherche_membre_electeurs' => $electeur
              ]);
         }else{
             return response()->json([
@@ -269,7 +328,7 @@ class ElecteursController extends Controller
             ]);
         }
     }
-
+    
     /**
      * Display the specified resource.
      */
@@ -281,6 +340,27 @@ class ElecteursController extends Controller
             return response()->json([
                 'status' => 200,
                 'electeur' => $electeur
+            ]);
+        }else{
+            return response()->json([
+                'status' => 404,
+                'message' => 'Aucun résultat trouvé !'
+            ]);
+        }
+    }
+
+    public function desapprouve_membre_electeur(string $id)
+    {
+        $electeur = electeurs::find($id);
+        
+        if($electeur){
+            $electeur->status = 0;
+            $electeur->secteurs = null;
+            $electeur->votes = null;
+            $electeur->save();
+            return response()->json([
+                'status' => 200,
+                'message' => 'Il a été désapprouvé !'
             ]);
         }else{
             return response()->json([
@@ -330,19 +410,17 @@ class ElecteursController extends Controller
 
 
     public function update(Request $request, string $id)
-    {
+    {    
         $autorisation = false;
 
         $electeur =  electeurs::find($id);
-   
-        dd($request->numero_carte);
 
         if($electeur){
 
-            $existes = electeurs::where('numero_carte', $request->numero_carte)->get();
-            var_dump($existes);
+            $existes = electeurs::where('numero_carte', $request->numero_carte)->first();
+
             if($existes){
-                if($electeur->numer_carte == $existes->numero_carte){
+                if($electeur->numero_carte == $existes->numero_carte){
                     $autorisation = true;
                 }
             }
@@ -365,15 +443,15 @@ class ElecteursController extends Controller
                 $electeur->ddn = $request->ddn;
                 $electeur->ldn = $request->ldn;
                 $electeur->sexe = $request->sexe;
-                $electeur->cin = $request->cin;
-                $electeur->delivrance_cin = $request->delivrance_cin;
+                $electeur->cin = $request->cin ?? '';
+                $electeur->delivrance_cin = $request->delivrance_cin ?? '';
                 $electeur->filieres = $request->filieres;
                 $electeur->niveau = $request->niveau;
                 $electeur->adresse = $request->adresse;
                 $electeur->contact = $request->contact;
                 $electeur->axes = $request->axes;
-                $electeur->sympathisant = $request->sympathisant;
-                $electeur->facebook = $request->facebook;
+                $electeur->sympathisant = $request->sympathisant ?? '';
+                $electeur->facebook = $request->facebook ?? '';
                 $electeur->date_inscription = $request->date_inscription;
                 $electeur->save();
                 
@@ -384,6 +462,9 @@ class ElecteursController extends Controller
             }else{
                 return response()->json([
                     'status' => 404,
+                    'electeur' => $electeur->numero_carte,
+                    'existes' => $existes->numero_carte,
+                    'boolean' => $electeur->numero_carte == $existes->numero_carte,
                     'message' => 'Ce numéro de carte appartient à une autre membre !',
                 ]);
             }
