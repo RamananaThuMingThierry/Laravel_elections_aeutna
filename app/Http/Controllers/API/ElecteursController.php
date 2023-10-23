@@ -29,6 +29,19 @@ class ElecteursController extends Controller
         ]);
     }
 
+    
+    public function non_adhere()
+    {
+        $non_adhere = electeurs::orderBy('nom', 'desc')->where('numero_carte', null)
+            ->where('status', 1)
+            ->get();
+
+        return response()->json([
+            'status' => 200,
+            'nombres_non_adhere' => $non_adhere->count(),
+            'electeurs_non_adhere' => $non_adhere
+        ]);
+    }
     public function recherche_membres(string $propriete, string $value){ 
         
         $bool = false;
@@ -124,6 +137,37 @@ class ElecteursController extends Controller
              return response()->json([
                  'status' => 200,
                  'recherche_membre_electeurs' => $electeur
+             ]);
+        }else{
+            return response()->json([
+                'status' => 404,
+                'message' => 'Aucun résultat !'
+            ]);
+        }
+    }
+
+    public function recherche_electeurs_non_adhere(string $propriete, string $value){ 
+        
+        $bool = false;
+        if($propriete == 'cin'){
+            if(strlen($value) != 12){
+                return response()->json([
+                    'status' => 400,
+                    'message' => 'C.I.N invalide !'
+                ]); 
+            }
+            $bool = true;
+        }
+
+        if($bool){
+            $electeur = electeurs::where($propriete, $value)->where('status', 1)->get();
+        }else{
+            $electeur = electeurs::where($propriete,'like',"%$value%")->where('status', 1)->get();
+        }
+        if($electeur->count() != 0){
+             return response()->json([
+                 'status' => 200,
+                 'recherche_electeur_non_adhere' => $electeur
              ]);
         }else{
             return response()->json([
@@ -240,70 +284,30 @@ class ElecteursController extends Controller
 
     public function nouveau_bachelier(Request $request)
     {
-        
         $electeur = new electeurs();
-
-        $existes = electeurs::where('numero_carte', $request->numero_carte)
-            ->whereNotNull('numero_carte')      
-            ->exists();
-                  
-        // Vérifier si cet électeurs exists dans la base de données
-        if(!$existes){
-          
-            if($request->numero_carte == null){
-                if($request->votes == 'releve'){
-                    if($request->status != 1){
-                        return response()->json([
-                            'status' => 404,
-                            'message' => 'Veuillez marque l\'élut !',
-                        ]);
-                    }
-                    if($request->secteurs == null){
-                        return response()->json([
-                            'status' => 404,
-                            'message' => 'Veuillez séléctionner votre domicile !',
-                        ]);
-                    }
-                    $electeur->votes = $request->votes;
-                    $electeur->status = 1;
-                }else{
-                    return response()->json([
-                        'status' => 404,
-                        'message' => 'Ce statut n\'a pas encore le numéro de carte !',
-                    ]);
-                }
-            }
-            
-            if($request->hasFile("photo")){
-                $file = $request->file('photo');
-                $extension = $file->getClientOriginalExtension();
-                $filename = time() . '.' .$extension;
-                $file->move("uploads/electeurs/", $filename);
-                $electeur->photo = 'uploads/electeurs/'.$filename;
-            }else{
-                $electeur->photo = null;
-            }
-            
-            $electeur->numero_carte = $request->numero_carte;
-            $electeur->nom = $request->nom;
-            $electeur->prenom = $request->prenom;
-            $electeur->cin = $request->cin;
-            $electeur->delivrance_cin = $request->delivrance_cin;
-            $electeur->adresse = $request->adresse;
-            $electeur->contact = $request->contact;
-            $electeur->axes = $request->axes;
-            $electeur->date_inscription = now();
-            $electeur->save();
-            return response()->json([
-                'status' => 200,
-                'message' => 'Enregistrement effectué !',
-            ]);
-        }else{
-            return response()->json([
-                'status' => 404,
-                'message' => 'Ce numéro matricule existe déjà !',
-            ]); 
-        }
+        
+        $electeur->nom = $request->nom;
+        $electeur->prenom = $request->prenom;
+        $electeur->cin = $request->cin;
+        $electeur->sexe = $request->sexe;
+        $electeur->ddn = $request->ddn;
+        $electeur->ldn = $request->ldn;
+        $electeur->delivrance_cin = $request->delivrance;
+        $electeur->adresse = $request->adresse;
+        $electeur->contact = $request->contact;
+        $electeur->facebook = $request->facebook;
+        $electeur->axes = $request->axes;
+        $electeur->votes = 'Convocation';
+        $electeur->sympathisant = 'Non';
+        $electeur->status = 1;
+        $electeur->secteurs = $request->secteurs;
+        $electeur->date_inscription = now();
+        $electeur->save();
+        
+        return response()->json([
+            'status' => 200,
+            'message' => 'Enregistrement effectué !',
+        ]);
     }
 
     public function valide_membres_electeurs(Request $request, string $id){
@@ -444,7 +448,7 @@ class ElecteursController extends Controller
                 $electeur->ldn = $request->ldn;
                 $electeur->sexe = $request->sexe;
                 $electeur->cin = $request->cin ?? '';
-                $electeur->delivrance_cin = $request->delivrance_cin ?? '';
+                $electeur->delivrance_cin = $request->delivrance ?? '';
                 $electeur->filieres = $request->filieres;
                 $electeur->niveau = $request->niveau;
                 $electeur->adresse = $request->adresse;
@@ -462,9 +466,6 @@ class ElecteursController extends Controller
             }else{
                 return response()->json([
                     'status' => 404,
-                    'electeur' => $electeur->numero_carte,
-                    'existes' => $existes->numero_carte,
-                    'boolean' => $electeur->numero_carte == $existes->numero_carte,
                     'message' => 'Ce numéro de carte appartient à une autre membre !',
                 ]);
             }
@@ -472,6 +473,38 @@ class ElecteursController extends Controller
             return response()->json([
                 'status' => 404,
                 'message' => 'Électeur non trouvé !'
+            ]);
+        }
+    }
+   
+    public function update_electeur_non_adhere(Request $request, string $id)
+    {    
+        $electeur =  electeurs::find($id);
+
+        if($electeur){
+            $electeur->nom = $request->nom;
+            $electeur->prenom = $request->prenom;
+            $electeur->ddn = $request->ddn;
+            $electeur->ldn = $request->ldn;
+            $electeur->sexe = $request->sexe;
+            $electeur->cin = $request->cin ?? '';
+            $electeur->delivrance_cin = $request->delivrance_cin ?? '';
+            $electeur->adresse = $request->adresse;
+            $electeur->contact = $request->contact;
+            $electeur->axes = $request->axes;
+            $electeur->facebook = $request->facebook ?? '';
+            $electeur->secteurs = $request->secteurs;
+            $electeur->date_inscription = $request->date_inscription;
+            $electeur->save();
+            
+            return response()->json([
+                'status' => 200,
+                'message' => 'Modification effectuée!',
+            ]);
+        }else{
+            return response()->json([
+                'status' => 404,
+                'message' => 'Aucun résultat !',
             ]);
         }
     }
