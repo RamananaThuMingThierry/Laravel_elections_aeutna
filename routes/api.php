@@ -61,7 +61,7 @@ Route::middleware(['auth:sanctum'])->group(function(){
     Route::post('update-electeur-non-adhere/{id}', [ElecteursController::class, 'update_electeur_non_adhere']); // Modifier un électeur non adhéré
 
     Route::post('valide_membres_electeurs/{id}', [ElecteursController::class, 'valide_membres_electeurs']); // Approuve membres électeur
-    Route::delete('delete-electeur/{id}', [ElecteursController::class, 'destroy']); // Supprimer une électeur
+    Route::post('delete-electeur/{id}', [ElecteursController::class, 'destroy']); // Supprimer une électeur
    
     // Déconnexion
     Route::post('logout', [AuthController::class, 'logout']);
