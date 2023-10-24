@@ -21,6 +21,9 @@ Route::middleware(['auth:sanctum'])->group(function(){
     // Afficher listes des électeurs membres AEUTNA
     Route::get('membres', [ElecteursController::class, 'membres']);
 
+    // Afficher listes des électeurs membres AEUTNA
+    Route::get('resultat', [ElecteursController::class, 'resultat']);
+
     // Afficher listes des électeurs non adhéré AEUTNA
     Route::get('non_adhere', [ElecteursController::class, 'non_adhere']);
     

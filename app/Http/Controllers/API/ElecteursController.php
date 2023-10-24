@@ -12,10 +12,25 @@ use function PHPUnit\Framework\isEmpty;
 
 class ElecteursController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+    /*
+     ** Display a listing of the resource.
+    */
 
+    public function resultat()
+    {
+        $MembresAEUTNA = electeurs::where('numero_carte', '<>', null)->get();
+        $ElecteursMembres = electeurs::where('numero_carte', '<>', null)->where('status', 1)->get();
+        $ElecteursNonAdheres = electeurs::where('numero_carte', null)->where('status', 1)->get();
+        $ElecteursVotes = electeurs::where('status', 1)->get();
+        
+        return response()->json([
+            'status' => 200,
+            'MembresAEUTNA' => $MembresAEUTNA->count(),
+            'ElecteursMembres' => $ElecteursMembres->count(),
+            'ElecteursNonAdheres' => $ElecteursNonAdheres->count(),
+            'Electeursvotes' => $ElecteursVotes->count()
+        ]);
+    }
 
     public function membres()
     {

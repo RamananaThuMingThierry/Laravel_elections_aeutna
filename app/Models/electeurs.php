@@ -11,6 +11,9 @@ class electeurs extends Model
 
     protected $table = "electeurs"; 
 
+    protected $primaryKey = ['nom', 'prenom'];
+    public $incrementing = false;
+    
     protected $fillable = [
         'photo',
         'numero_carte',

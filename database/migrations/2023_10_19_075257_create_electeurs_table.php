@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('electeurs', function (Blueprint $table) {
             $table->id();
             $table->string('photo')->nullable();
-            $table->integer('numero_carte')->nullable()->unique();
+            $table->integer('numero_carte')->nullable()->unique(); 
             $table->string('nom', 255)->nullable();
             $table->string('prenom', 255)->nullable();
             $table->date('ddn')->nullable()->comment('Date de naissance');
