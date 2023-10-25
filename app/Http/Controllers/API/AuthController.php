@@ -56,10 +56,15 @@ class AuthController extends Controller
     {
         
         $validator = Validator::make($request->all(), [
-            'pseudo' => 'required|max:191',
-            'email' => 'required|email|max:191|unique:users',
+            'pseudo' => 'required|max:255',
+            'email' => 'required|email|max:255|unique:users',
             'password' => 'required|min:8',
-            'c_password' => 'required|min:8'
+        ], [
+            'pseduo.required' => 'Le champ pseudo est obligatoire',
+            'email.required' => 'Le champ email est obligatoire',
+            'email.unique' => 'L\'adresse email existe déjà!',
+            'password.required' => 'Le mot de passe est obligatoire',
+            'password.min' => 'Le mot de passe doit avoir au moins 8 caractères!',
         ]);
 
         if($validator->fails()){
@@ -67,18 +72,19 @@ class AuthController extends Controller
                 'Validation_errors' => $validator->messages(),
             ]);
         }else{
+
             $user = User::create([
                 'pseudo' => $request->pseudo,
                 'email' => $request->email,
                 'password' => Hash::make($request->password)
             ]);
 
-            $token = $user->createToken($user->email.'_Token')->plainTextToken;
+           $token = $user->createToken($user->email.'_Token')->plainTextToken;
 
             return response()->json([
                 'status' => 200,
-                'pseudo' => $user->pseudo,
-                'token' => $token,
+               'pseudo' => $user->pseudo,
+               'token' => $token,
                 'message' => 'Inscription avec succès !',
             ]);
         }
