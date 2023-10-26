@@ -10,9 +10,6 @@ class electeurs extends Model
     use HasFactory;
 
     protected $table = "electeurs"; 
-
-    protected $primaryKey = ['nom', 'prenom'];
-    public $incrementing = false;
     
     protected $fillable = [
         'photo',

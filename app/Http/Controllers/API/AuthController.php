@@ -60,7 +60,7 @@ class AuthController extends Controller
             'email' => 'required|email|max:255|unique:users',
             'password' => 'required|min:8',
         ], [
-            'pseduo.required' => 'Le champ pseudo est obligatoire',
+            'pseudo.required' => 'Le champ pseudo est obligatoire',
             'email.required' => 'Le champ email est obligatoire',
             'email.unique' => 'L\'adresse email existe déjà!',
             'password.required' => 'Le mot de passe est obligatoire',

@@ -255,42 +255,55 @@ class ElecteursController extends Controller
         $existes = DB::table('electeurs')->where('numero_carte', $request->numero_carte)
                   ->exists();
 
-        if(!$existes){               
-            if($photo){
-                $file = $request->file('photo');
-                $extension = $file->getClientOriginalExtension();
-                $filename = time() . '.' .$extension;
-                $file->move("uploads/electeurs/", $filename);
-                $image = 'uploads/electeurs/'.$filename;
+        if(!$existes){     
+            
+            $electeurs_existe = DB::table('electeurs')
+            ->where('nom', $request->nom)
+            ->where('prenom', $request->prenom)
+            ->exists();
+
+            if(!$electeurs_existe){
+                if($photo){
+                    $file = $request->file('photo');
+                    $extension = $file->getClientOriginalExtension();
+                    $filename = time() . '.' .$extension;
+                    $file->move("uploads/electeurs/", $filename);
+                    $image = 'uploads/electeurs/'.$filename;
+                }else{
+                    $image = null;
+                }
+    
+                DB::table('electeurs')->insert([
+                    'photo' => $image,
+                    'numero_carte' => $numero_carte,
+                    'nom' => $nom,
+                    'prenom' => $prenom,
+                    'ddn' => $ddn,
+                    'ldn' => $ldn,
+                    'sexe' => $sexe,
+                    'cin' => $cin,
+                    'delivrance_cin' => $delivrance,
+                    'filieres' => $filieres,
+                    'niveau' => $filieres,
+                    'niveau' => $niveau,
+                    'adresse' => $adresse,
+                    'contact' => $contact,
+                    'axes' => $axes,
+                    'sympathisant' => $sympathisant,
+                    'facebook' => $facebook,
+                    'date_inscription' => $date_inscription
+                ]);
+    
+                return response()->json([
+                    'status' => 200,
+                    'message' => 'Enregistrement effectué !',
+                ]);
             }else{
-                $image = null;
+                return response()->json([
+                    'status' => 404,
+                    'message' => 'L\'électeur existe déjà.',
+                ]); 
             }
-
-            DB::table('electeurs')->insert([
-                'photo' => $image,
-                'numero_carte' => $numero_carte,
-                'nom' => $nom,
-                'prenom' => $prenom,
-                'ddn' => $ddn,
-                'ldn' => $ldn,
-                'sexe' => $sexe,
-                'cin' => $cin,
-                'delivrance_cin' => $delivrance,
-                'filieres' => $filieres,
-                'niveau' => $filieres,
-                'niveau' => $niveau,
-                'adresse' => $adresse,
-                'contact' => $contact,
-                'axes' => $axes,
-                'sympathisant' => $sympathisant,
-                'facebook' => $facebook,
-                'date_inscription' => $date_inscription
-            ]);
-
-            return response()->json([
-                'status' => 200,
-                'message' => 'Enregistrement effectué !',
-            ]);
         }else{
             return response()->json([
                 'status' => 404,
@@ -318,30 +331,42 @@ class ElecteursController extends Controller
         $secteurs = $request->secteurs;
         $date_inscription = now();
 
-        DB::table('electeurs')->insert([
-            'nom' => $nom,
-            'prenom' => $prenom,
-            'ddn' => $ddn,
-            'ldn' => $ldn,
-            'sexe' => $sexe,
-            'cin' => $cin,
-            'delivrance_cin' => $delivrance,
-            'adresse' => $adresse,
-            'contact' => $contact,
-            'axes' => $axes,
-            'votes' => $votes,
-            'status' => $status,
-            'secteurs' => $secteurs,
-            'sympathisant' => $sympathisant,
-            'facebook' => $facebook,
-            'date_inscription' => $date_inscription
-        ]);
-
+        $electeurs_existe = DB::table('electeurs')
+        ->where('nom', $nom)
+        ->where('prenom', $prenom)
+        ->exists();
         
-        return response()->json([
-            'status' => 200,
-            'message' => 'Enregistrement effectué !',
-        ]);
+        if($electeurs_existe){
+            return response()->json([
+                'status' => 400,
+                'message' => 'Vous avez déjà votes!.',
+            ]); 
+        }else{
+            DB::table('electeurs')->insert([
+                'nom' => $nom,
+                'prenom' => $prenom,
+                'ddn' => $ddn,
+                'ldn' => $ldn,
+                'sexe' => $sexe,
+                'cin' => $cin,
+                'delivrance_cin' => $delivrance,
+                'adresse' => $adresse,
+                'contact' => $contact,
+                'axes' => $axes,
+                'votes' => $votes,
+                'status' => $status,
+                'secteurs' => $secteurs,
+                'sympathisant' => $sympathisant,
+                'facebook' => $facebook,
+                'date_inscription' => $date_inscription
+            ]);
+            
+            return response()->json([
+                'status' => 200,
+                'message' => 'Enregistrement effectué !',
+            ]);
+        }
+    
     }
 
     public function valide_membres_electeurs(Request $request, string $id){
@@ -456,8 +481,6 @@ class ElecteursController extends Controller
 
     public function update(Request $request, string $id)
     {    
-        $autorisation = false;
-
         $photo = $request->hasFile("photo");
         $electeur = DB::table('electeurs')->where('id', $id)->first();
 
@@ -466,66 +489,73 @@ class ElecteursController extends Controller
 
             $existes =  DB::table('electeurs')->where('numero_carte', $request->numero_carte)->first();
 
+            $electeurs_existe = DB::table('electeurs')
+            ->where('nom', $request->nom)
+            ->where('prenom', $request->prenom)
+            ->first();
+
             if($existes){
                 if($electeur->numero_carte == $existes->numero_carte){
-                    $autorisation = true;
+                    if(($electeur->nom == $electeurs_existe->nom) && $electeur->prenom == $electeurs_existe->prenom){
+                        if($photo){
+                            $file = $request->file('photo');
+                            $extension = $file->getClientOriginalExtension();
+                            $filename = time() . '.' .$extension;
+                            $file->move("uploads/electeurs/", $filename);
+                            $image = 'uploads/electeurs/'.$filename;
+                        }else{
+                            $image = null;
+                        }
+                        
+                        $numero_carte = $request->numero_carte;
+                        $nom = $request->nom;
+                        $prenom = $request->prenom;
+                        $ddn = $request->ddn;
+                        $ldn = $request->ldn;
+                        $sexe = $request->sexe;
+                        $cin = $request->cin;
+                        $delivrance = $request->delivrance_cin;
+                        $filieres = $request->filieres;
+                        $niveau = $request->niveau;
+                        $adresse = $request->adresse;
+                        $contact = $request->contact;
+                        $axes = $request->axes;
+                        $sympathisant = $request->sympathisant;
+                        $facebook = $request->facebook;
+                        $date_inscription = $request->date_inscription;
+        
+                        DB::table('electeurs')->where('id', $id)->update([
+                            'photo' => $image,
+                            'numero_carte' => $numero_carte,
+                            'nom' => $nom,
+                            'prenom' => $prenom,
+                            'ddn' => $ddn,
+                            'ldn' => $ldn,
+                            'sexe' => $sexe,
+                            'cin' => $cin,
+                            'delivrance_cin' => $delivrance,
+                            'filieres' => $filieres,
+                            'niveau' => $filieres,
+                            'niveau' => $niveau,
+                            'adresse' => $adresse,
+                            'contact' => $contact,
+                            'axes' => $axes,
+                            'sympathisant' => $sympathisant,
+                            'facebook' => $facebook,
+                            'date_inscription' => $date_inscription
+                        ]);
+                        
+                        return response()->json([
+                            'status' => 200,
+                            'message' => 'Modification effectuée!',
+                        ]);
+                    }else{
+                        return response()->json([
+                            'status' => 404,
+                            'message' => 'L\'électeur existe déjà!',
+                        ]);
+                    }
                 }
-            }
-
-            if($autorisation){
-                
-                if($photo){
-                    $file = $request->file('photo');
-                    $extension = $file->getClientOriginalExtension();
-                    $filename = time() . '.' .$extension;
-                    $file->move("uploads/electeurs/", $filename);
-                    $image = 'uploads/electeurs/'.$filename;
-                }else{
-                    $image = null;
-                }
-                
-                $numero_carte = $request->numero_carte;
-                $nom = $request->nom;
-                $prenom = $request->prenom;
-                $ddn = $request->ddn;
-                $ldn = $request->ldn;
-                $sexe = $request->sexe;
-                $cin = $request->cin;
-                $delivrance = $request->delivrance;
-                $filieres = $request->filieres;
-                $niveau = $request->niveau;
-                $adresse = $request->adresse;
-                $contact = $request->contact;
-                $axes = $request->axes;
-                $sympathisant = $request->sympathisant;
-                $facebook = $request->facebook;
-                $date_inscription = $request->date_inscription;
-
-                DB::table('electeurs')->where('id', $id)->update([
-                    'photo' => $image,
-                    'numero_carte' => $numero_carte,
-                    'nom' => $nom,
-                    'prenom' => $prenom,
-                    'ddn' => $ddn,
-                    'ldn' => $ldn,
-                    'sexe' => $sexe,
-                    'cin' => $cin,
-                    'delivrance_cin' => $delivrance,
-                    'filieres' => $filieres,
-                    'niveau' => $filieres,
-                    'niveau' => $niveau,
-                    'adresse' => $adresse,
-                    'contact' => $contact,
-                    'axes' => $axes,
-                    'sympathisant' => $sympathisant,
-                    'facebook' => $facebook,
-                    'date_inscription' => $date_inscription
-                ]);
-                
-                return response()->json([
-                    'status' => 200,
-                    'message' => 'Modification effectuée!',
-                ]);
             }else{
                 return response()->json([
                     'status' => 404,
@@ -546,40 +576,54 @@ class ElecteursController extends Controller
         $electeur = DB::table('electeurs')->where('id', $id)->first();
 
         if($electeur){
-            $nom = $request->nom;
-            $prenom = $request->prenom;
-            $ddn = $request->ddn;
-            $ldn = $request->ldn;
-            $sexe = $request->sexe;
-            $cin = $request->cin;
-            $delivrance = $request->delivrance_cin;
-            $adresse = $request->adresse;
-            $contact = $request->contact;
-            $axes = $request->axes;
-            $facebook = $request->facebook;
-            $secteurs = $request->secteurs;
-            $date_inscription = $request->date_inscription;
-            
-            DB::table('electeurs')->where('id', $id)->update([
-                'nom' => $nom,
-                'prenom' => $prenom,
-                'ddn' => $ddn,
-                'ldn' => $ldn,
-                'sexe' => $sexe,
-                'cin' => $cin,
-                'delivrance_cin' => $delivrance,
-                'adresse' => $adresse,
-                'contact' => $contact,
-                'axes' => $axes,
-                'secteurs' => $secteurs,
-                'facebook' => $facebook,
-                'date_inscription' => $date_inscription
-            ]);
-            
-            return response()->json([
-                'status' => 200,
-                'message' => 'Modification effectuée!',
-            ]);
+
+             
+            $electeurs_existe = DB::table('electeurs')
+            ->where('nom', $request->nom)
+            ->where('prenom', $request->prenom)
+            ->first();
+
+            if(($electeurs_existe->nom == $electeur->nom) == ($electeurs_existe->prenom == $electeur->prenom)){
+                $nom = $request->nom;
+                $prenom = $request->prenom;
+                $ddn = $request->ddn;
+                $ldn = $request->ldn;
+                $sexe = $request->sexe;
+                $cin = $request->cin;
+                $delivrance = $request->delivrance_cin;
+                $adresse = $request->adresse;
+                $contact = $request->contact;
+                $axes = $request->axes;
+                $facebook = $request->facebook;
+                $secteurs = $request->secteurs;
+                $date_inscription = $request->date_inscription;
+                
+                DB::table('electeurs')->where('id', $id)->update([
+                    'nom' => $nom,
+                    'prenom' => $prenom,
+                    'ddn' => $ddn,
+                    'ldn' => $ldn,
+                    'sexe' => $sexe,
+                    'cin' => $cin,
+                    'delivrance_cin' => $delivrance,
+                    'adresse' => $adresse,
+                    'contact' => $contact,
+                    'axes' => $axes,
+                    'secteurs' => $secteurs,
+                    'facebook' => $facebook,
+                    'date_inscription' => $date_inscription
+                ]);
+                
+                return response()->json([
+                    'status' => 200,
+                    'message' => 'Modification effectuée!',
+                ]);
+            }else{
+                return response()->json([
+                    'status' => 404,
+                    'message' => 'L\'électeur existe déjà!',
+                ]);
+            }
         }else{
             return response()->json([
                 'status' => 404,

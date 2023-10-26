@@ -32,6 +32,7 @@ return new class extends Migration
             $table->date('date_inscription');
             $table->string('secteurs')->nullable();
             $table->integer('status')->default(0);
+            $table->unique(['nom', 'prenom']);
             $table->string('votes', 50)->nullable()->comment('Piège jointe utilisé pour les élections');
         });
     }
