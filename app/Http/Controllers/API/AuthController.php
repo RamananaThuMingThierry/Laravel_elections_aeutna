@@ -4,7 +4,9 @@ namespace App\Http\Controllers\API;
 
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 
@@ -56,13 +58,14 @@ class AuthController extends Controller
     {
         
         $validator = Validator::make($request->all(), [
-            'pseudo' => 'required|max:255',
+            'pseudo' => 'required|max:255|unique:users',
             'email' => 'required|email|max:255|unique:users',
             'password' => 'required|min:8',
         ], [
             'pseudo.required' => 'Le champ pseudo est obligatoire',
             'email.required' => 'Le champ email est obligatoire',
             'email.unique' => 'L\'adresse email existe déjà!',
+            'pseudo.unique' => 'Le pseudo existe déjà!',
             'password.required' => 'Le mot de passe est obligatoire',
             'password.min' => 'Le mot de passe doit avoir au moins 8 caractères!',
         ]);
@@ -90,6 +93,21 @@ class AuthController extends Controller
         }
     }
 
+    public function getUserId(Request $request){
+        $user = DB::table('users')->where('id', $request->user()->id)->first();
+        if($user){
+            return response()->json([
+                'status' => 200,
+                'user' => $user
+            ]);
+        }else{
+            return response()->json([
+                'status' => 404,
+                'user' => 'Vous n\'êtes pas authentifier'
+            ]);
+        }
+    }
+
     public function logout(){
         auth()->user()->tokens()->delete();
         return response()->json([
@@ -97,4 +115,6 @@ class AuthController extends Controller
             'message' => "Déconnexion effectuée",
         ]);
     }
+
+
 }

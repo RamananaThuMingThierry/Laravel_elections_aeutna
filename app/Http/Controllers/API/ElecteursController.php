@@ -13,11 +13,7 @@ use function PHPUnit\Framework\isEmpty;
 
 class ElecteursController extends Controller
 {
-    /*
-     ** Display a listing of the resource.
-    */
-
-    public function resultat()
+    public function statistiques()
     {
         $MembresAEUTNA = electeurs::where('numero_carte', '<>', null)->get();
         $ElecteursMembres = electeurs::where('numero_carte', '<>', null)->where('status', 1)->get();
@@ -33,36 +29,35 @@ class ElecteursController extends Controller
         ]);
     }
 
-    public function membres()
+    public function liste_des_electeurs_membres()
     {
-        $membres = electeurs::orderBy('numero_carte', 'desc')->where('numero_carte', '<>', null)
+        $liste_des_electeurs_membres = electeurs::orderBy('numero_carte', 'desc')->where('numero_carte', '<>', null)
             ->where('status', 0)
             ->get();
         return response()->json([
             'status' => 200,
-            'nombres_membres' => $membres->count(),
-            'electeurs_membres' => $membres
+            'liste_des_electeurs_membres' => $liste_des_electeurs_membres
         ]);
     }
-
     
-    public function non_adhere()
+    public function liste_des_electeurs_non_adheres()
     {
-        $non_adhere = electeurs::orderBy('nom', 'desc')->where('numero_carte', null)
+        $liste_des_electeurs_non_adhere = electeurs::orderBy('nom', 'desc')->where('numero_carte', null)
             ->where('status', 1)
             ->get();
 
         return response()->json([
             'status' => 200,
-            'nombres_non_adhere' => $non_adhere->count(),
-            'electeurs_non_adhere' => $non_adhere
+            'liste_des_electeurs_non_adhere' => $liste_des_electeurs_non_adhere
         ]);
     }
-    public function recherche_membres(string $propriete, string $value){ 
+    
+    public function recherche_un_electeur_membre(string $propriete, string $value){ 
         
-        $bool = false;
+        $autorisations = false;
+
         if($propriete == 'numero_carte'){
-            $bool = true;
+            $autorisations = true;
         }else if($propriete == 'cin'){
             if(strlen($value) != 12){
                 return response()->json([
@@ -70,37 +65,37 @@ class ElecteursController extends Controller
                     'message' => 'C.I.N invalide !'
                 ]); 
             }
-            $bool = true;
+            $autorisations = true;
         }
 
-        if($bool){
-            $membres = electeurs::where($propriete, $value)->where('status', 1)->get();
-            if($membres->count() != 0){
+        if($autorisations){
+            $recherche_un_electeur_membre = electeurs::where($propriete, $value)->where('numero_carte', '<>', null)->where('status', 1)->get();
+            if($recherche_un_electeur_membre->count() != 0){
                 return response()->json([
                     'status' => 400,
                     'message' => 'Vous avez déjà votes !'
                 ]); 
             }else{
-                $membres = electeurs::where($propriete, $value)->where('status', 0)->get();    
+                $recherche_un_electeur_membre = electeurs::where($propriete, $value)->where('numero_carte', '<>', null)->where('status', 0)->get();    
             }
         }else{
 
-            $membres = electeurs::where($propriete,'like',"%$value%")->where('status', 1)->get();
+            $recherche_un_electeur_membre = electeurs::where($propriete,'like',"%$value%")->where('numero_carte', '<>', null)->where('status', 1)->get();
 
-            if($membres->count() != 0){
+            if($recherche_un_electeur_membre->count() != 0){
                 return response()->json([
                     'status' => 400,
                     'message' => 'Vous avez déjà votes !'
                 ]); 
             }else{
-                $membres = electeurs::where($propriete,'like', "%$value%")->where('status', 0)->get();    
+                $recherche_un_electeur_membre = electeurs::where($propriete,'like', "%$value%")->where('numero_carte', '<>', null)->where('status', 0)->get();    
             }
         }
 
-        if($membres->count() != 0){
+        if($recherche_un_electeur_membre->count() != 0){
              return response()->json([
                  'status' => 200,
-                 'recherche_membres' => $membres
+                 'recherche_un_electeur_membre' => $recherche_un_electeur_membre
              ]);
         }else{
             return response()->json([
@@ -110,18 +105,42 @@ class ElecteursController extends Controller
         }
     }
  
-    public function recherche_membre_electeurs(string $propriete, string $value){ 
+    public function recherche_electeur_non_adhere(string $propriete, string $value){ 
         
-        $bool = false;
-        if($propriete == 'numero_carte'){
-            $bool = true;
-        }else if($propriete == 'cin'){
+        $autorisations = false;
+        
+        if($propriete == 'cin'){
             if(strlen($value) != 12){
                 return response()->json([
                     'status' => 400,
                     'message' => 'C.I.N invalide !'
                 ]); 
             }
+            $autorisations = true;
+        }
+
+        if($autorisations){
+            $electeur = electeurs::where($propriete, $value)->where('numero_carte', null)->where('status', 1)->get();
+        }else{
+            $electeur = electeurs::where($propriete,'like',"%$value%")->where('numero_carte', null)->where('status', 1)->get();
+        }
+        if($electeur->count() != 0){
+             return response()->json([
+                 'status' => 200,
+                 'recherche_electeur_non_adhere' => $electeur
+             ]);
+        }else{
+            return response()->json([
+                'status' => 404,
+                'message' => 'Aucun résultat !'
+            ]);
+        }
+    }
+
+    public function recherche_un_electeur_vote(string $propriete, string $value){ 
+        
+        $bool = false;
+        if($propriete == 'numero_carte'){
             $bool = true;
         }
 
@@ -152,7 +171,7 @@ class ElecteursController extends Controller
         if($electeur->count() != 0){
              return response()->json([
                  'status' => 200,
-                 'recherche_membre_electeurs' => $electeur
+                 'recherche_un_electeur_vote' => $electeur
              ]);
         }else{
             return response()->json([
@@ -162,7 +181,7 @@ class ElecteursController extends Controller
         }
     }
 
-    public function recherche_electeurs_non_adhere(string $propriete, string $value){ 
+    public function recherche_electeur_non_adhere_votes(string $propriete, string $value){ 
         
         $bool = false;
         if($propriete == 'cin'){
@@ -193,115 +212,79 @@ class ElecteursController extends Controller
         }
     }
 
-    public function liste_des_electeurs_membres()
+    public function liste_des_electeurs_votes()
     {
-        $liste_des_electeurs_membres = electeurs::where('numero_carte', '<>', null)
-                ->where('status', 1)
-                ->get();
-
+        $electeurs_votes = electeurs::where('status', 1)->get();
         return response()->json([
             'status' => 200,
-            'nombres_liste_des_electeurs_membres' => $liste_des_electeurs_membres->count(),
-            'liste_des_electeurs_membres' => $liste_des_electeurs_membres
+            'electeurs_votes' => $electeurs_votes
         ]);
     }
 
-    public function liste_des_electeurs_non_adhere()
-    {
-        $liste_des_electeurs_non_adhere = electeurs::where('numero_carte', null)
-                ->where('status', 1)
-                ->get();
-
-        return response()->json([
-            'status' => 200,
-            'nombres_liste_des_electeurs_non_adhere' => $liste_des_electeurs_non_adhere->count(),
-            'liste_des_electeurs_non_adhere' => $liste_des_electeurs_non_adhere
-        ]);
-    }
-
-    public function liste_des_electeurs()
-    {
-        $electeurs = electeurs::where('status', 1)->get();
-        return response()->json([
-            'status' => 200,
-            'nombres_electeurs' => $electeurs->count(),
-            'electeurs' => $electeurs
-        ]);
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function ajouter_un_electeur_membre(Request $request)
     {
         $photo = $request->hasFile("photo");
         $numero_carte = $request->numero_carte;
         $nom = $request->nom;
         $prenom = $request->prenom;
-        $ddn = $request->ddn;
-        $ldn = $request->ldn;
         $sexe = $request->sexe;
         $cin = $request->cin;
-        $delivrance = $request->delivrance;
-        $filieres = $request->filieres;
-        $niveau = $request->niveau;
-        $adresse = $request->adresse;
-        $contact = $request->contact;
         $axes = $request->axes;
         $sympathisant = $request->sympathisant;
-        $facebook = $request->facebook;
         $date_inscription = $request->date_inscription;
-        
-        $existes = DB::table('electeurs')->where('numero_carte', $request->numero_carte)
+        $numero_carte_existes = DB::table('electeurs')->where('numero_carte', $numero_carte)
                   ->exists();
 
-        if(!$existes){     
+        if(!$numero_carte_existes){     
             
-            $electeurs_existe = DB::table('electeurs')
-            ->where('nom', $request->nom)
-            ->where('prenom', $request->prenom)
+            $verifier_nom_prenom = DB::table('electeurs')
+            ->where('nom', $nom)
+            ->where('prenom', $prenom)
             ->exists();
 
-            if(!$electeurs_existe){
-                if($photo){
-                    $file = $request->file('photo');
-                    $extension = $file->getClientOriginalExtension();
-                    $filename = time() . '.' .$extension;
-                    $file->move("uploads/electeurs/", $filename);
-                    $image = 'uploads/electeurs/'.$filename;
+            if(!$verifier_nom_prenom){
+
+                $verifier_cin =  DB::table('electeurs')
+                ->where('cin', $cin)
+                ->exists();
+
+                if(!$verifier_cin){
+                    if($photo){
+                        $file = $request->file('photo');
+                        $extension = $file->getClientOriginalExtension();
+                        $filename = time() . '.' .$extension;
+                        $file->move("uploads/electeurs/", $filename);
+                        $image = 'uploads/electeurs/'.$filename;
+                    }else{
+                        $image = null;
+                    }
+        
+                    DB::table('electeurs')->insert([
+                        'photo' => $image,
+                        'numero_carte' => $numero_carte,
+                        'nom' => $nom,
+                        'prenom' => $prenom,
+                        'sexe' => $sexe,
+                        'cin' => $cin,
+                        'axes' => $axes,
+                        'sympathisant' => $sympathisant,
+                        'date_inscription' => $date_inscription
+                    ]);
+        
+                    return response()->json([
+                        'status' => 200,
+                        'message' => 'Enregistrement effectué !',
+                    ]);
                 }else{
-                    $image = null;
+                    return response()->json([
+                        'status' => 404,
+                        'message' => 'C.I.N existe déjà !',
+                    ]); 
                 }
-    
-                DB::table('electeurs')->insert([
-                    'photo' => $image,
-                    'numero_carte' => $numero_carte,
-                    'nom' => $nom,
-                    'prenom' => $prenom,
-                    'ddn' => $ddn,
-                    'ldn' => $ldn,
-                    'sexe' => $sexe,
-                    'cin' => $cin,
-                    'delivrance_cin' => $delivrance,
-                    'filieres' => $filieres,
-                    'niveau' => $filieres,
-                    'niveau' => $niveau,
-                    'adresse' => $adresse,
-                    'contact' => $contact,
-                    'axes' => $axes,
-                    'sympathisant' => $sympathisant,
-                    'facebook' => $facebook,
-                    'date_inscription' => $date_inscription
-                ]);
-    
-                return response()->json([
-                    'status' => 200,
-                    'message' => 'Enregistrement effectué !',
-                ]);
             }else{
                 return response()->json([
                     'status' => 404,
-                    'message' => 'L\'électeur existe déjà.',
+                    'message' => 'L\'électeur existe déjà !',
                 ]); 
             }
         }else{
@@ -312,70 +295,69 @@ class ElecteursController extends Controller
         }
     }
 
-    public function nouveau_bachelier(Request $request)
+    public function ajouter_un_electeur_non_adhere(Request $request)
     {
         $nom = $request->nom;
         $prenom = $request->prenom;
         $cin = $request->cin;
         $sexe = $request->sexe;
-        $ddn = $request->ddn;
-        $ldn = $request->ldn;
-        $delivrance = $request->delivrance;
-        $adresse = $request->adresse;
-        $contact = $request->contact;
-        $facebook = $request->facebook;
         $axes = $request->axes;
         $votes = 'Convocation';
         $sympathisant = 'Non';
         $status = 1;
         $secteurs = $request->secteurs;
         $date_inscription = now();
-
-        $electeurs_existe = DB::table('electeurs')
+        
+        $verifier_nom_prenom = DB::table('electeurs')
         ->where('nom', $nom)
         ->where('prenom', $prenom)
         ->exists();
         
-        if($electeurs_existe){
+        if($verifier_nom_prenom){
             return response()->json([
                 'status' => 400,
                 'message' => 'Vous avez déjà votes!.',
             ]); 
         }else{
-            DB::table('electeurs')->insert([
-                'nom' => $nom,
-                'prenom' => $prenom,
-                'ddn' => $ddn,
-                'ldn' => $ldn,
-                'sexe' => $sexe,
-                'cin' => $cin,
-                'delivrance_cin' => $delivrance,
-                'adresse' => $adresse,
-                'contact' => $contact,
-                'axes' => $axes,
-                'votes' => $votes,
-                'status' => $status,
-                'secteurs' => $secteurs,
-                'sympathisant' => $sympathisant,
-                'facebook' => $facebook,
-                'date_inscription' => $date_inscription
-            ]);
-            
-            return response()->json([
-                'status' => 200,
-                'message' => 'Enregistrement effectué !',
-            ]);
+            $verifier_cin = DB::table('electeurs')
+            ->where('cin', $cin)
+            ->exists();
+
+            if($verifier_cin){
+                return response()->json([
+                    'status' => 400,
+                    'message' => 'Votre C.I.N appartient à un autre membre',
+                ]); 
+            }else{
+                DB::table('electeurs')->insert([
+                    'nom' => $nom,
+                    'prenom' => $prenom,
+                    'sexe' => $sexe,
+                    'cin' => $cin,
+                    'axes' => $axes,
+                    'votes' => $votes,
+                    'status' => $status,
+                    'secteurs' => $secteurs,
+                    'sympathisant' => $sympathisant,
+                    'date_inscription' => $date_inscription
+                ]);
+                
+                return response()->json([
+                    'status' => 200,
+                    'message' => 'Enregistrement effectué !',
+                ]);
+            }
         }
     
     }
 
-    public function valide_membres_electeurs(Request $request, string $id){
+    public function valide_un_electeur_membre(Request $request, string $id){
        
         try {
-            $electeur = DB::table('electeurs')->where('id', $id)->first();
-   
             
-             if ($electeur) {
+            $electeur_membre = DB::table('electeurs')->where('id', $id)->first();
+
+             if ($electeur_membre) {
                 
                 DB::table('electeurs')->where('id', $id)->update([
                     'secteurs' => $request->secteurs,
@@ -385,7 +367,6 @@ class ElecteursController extends Controller
                 
                 return response()->json([
                     'status' => 200,
-
                     'message' => 'Opération effectuée !'
                 ]);
 
@@ -397,32 +378,74 @@ class ElecteursController extends Controller
                 return response()->json(['message' => 'Une erreur interne s\'est produite.', 'status' => 500], 500);
             }
     }
-    
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $electeur_id)
+
+    public function afficher_un_electeur_non_adhere(string $id)
     {
         try {
-    $electeur = DB::table('electeurs')->where('id', $electeur_id)->first();
-            if ($electeur) {
-    return response()->json(['electeur' => $electeur, 'status' => 200], 200);
+        $electeur_non_adhere = DB::table('electeurs')->where('id', $id)->where('numero_carte',null)->where('status', 1)->first();
+        
+        if ($electeur_non_adhere) {
+        return response()->json(['electeur_non_adhere' => $electeur_non_adhere, 'status' => 200], 200);
             } else {
                 return response()->json(['message' => 'Électeur non trouvé', 'status' => 404], 404);
             }
-        } catch (\Exception $e) {
-            
-           
-    // Gérez l'erreur et renvoyez une réponse d'erreur appropriée
+        } catch (\Exception $e) {   
+        // Gérez l'erreur et renvoyez une réponse d'erreur appropriée
+            return response()->json(['message' => 'Une erreur interne s\'est produite.', 'status' => 500], 500);
+        }
+    }
+   
+    public function afficher_un_electeur_non_adhere_vote(string $id)
+    {
+        try {
+        $electeur_non_adhere_vote = DB::table('electeurs')->where('id', $id)->where('numero_carte',null)->where('status', 1)->first();
+        
+        if ($electeur_non_adhere_vote) {
+        return response()->json(['electeur_non_adhere_vote' => $electeur_non_adhere_vote, 'status' => 200], 200);
+            } else {
+                return response()->json(['message' => 'Électeur non trouvé', 'status' => 404], 404);
+            }
+        } catch (\Exception $e) {   
+        // Gérez l'erreur et renvoyez une réponse d'erreur appropriée
             return response()->json(['message' => 'Une erreur interne s\'est produite.', 'status' => 500], 500);
         }
     }
 
-    public function desapprouve_membre_electeur(string $id)
+    public function afficher_un_electeur_membre(string $id)
     {
-        $electeur = DB::table('electeurs')->where('id', $id)->first();
+        try {
+        $electeur_membre = DB::table('electeurs')->where('id', $id)->first();
+            if ($electeur_membre) {
+                return response()->json(['electeur_membre' => $electeur_membre, 'status' => 200], 200);
+            } else {
+                return response()->json(['message' => 'Électeur non trouvé', 'status' => 404], 404);
+            }
+        } catch (\Exception $e) {   
+            // Gérez l'erreur et renvoyez une réponse d'erreur appropriée
+            return response()->json(['message' => 'Une erreur interne s\'est produite.', 'status' => 500], 500);
+        }
+    }
+  
+    public function afficher_un_electeur_membre_vote(string $id)
+    {
+        try {
+             $electeur_membre_vote = DB::table('electeurs')->where('id', $id)->first();
+            if ($electeur_membre_vote) {
+                return response()->json(['electeur_membre_vote' => $electeur_membre_vote, 'status' => 200], 200);
+            } else {
+                return response()->json(['message' => 'Électeur non trouvé', 'status' => 404], 404);
+            }
+        } catch (\Exception $e) {   
+            // Gérez l'erreur et renvoyez une réponse d'erreur appropriée
+            return response()->json(['message' => 'Une erreur interne s\'est produite.', 'status' => 500], 500);
+        }
+    }
+
+    public function desapprouve_un_electeur_vote(string $id)
+    {
+        $electeur_membre_vote = DB::table('electeurs')->where('id', $id)->first();
         
-        if($electeur){
+        if($electeur_membre_vote){
             DB::table('electeurs')->where('id', $id)->update([
                 'secteurs' => null,
                 'status' => 0,
@@ -430,7 +453,7 @@ class ElecteursController extends Controller
             ]);
             return response()->json([
                 'status' => 200,
-                'message' => 'Il a été désapprouvé !'
+                'message' => 'Vous avez été désapprouvé !'
             ]);
         }else{
             return response()->json([
@@ -440,12 +463,12 @@ class ElecteursController extends Controller
         }
     }
 
-    public function edit(string $id)
+    public function obtenir_un_electeur(string $id)
     {
         try {
             $electeur = DB::table('electeurs')->where('id', $id)->first();
                     if ($electeur) {
-            return response()->json(['membre' => $electeur, 'status' => 200], 200);
+            return response()->json(['electeur_membre' => $electeur, 'status' => 200], 200);
                     } else {
                         return response()->json(['message' => 'Électeur non trouvé', 'status' => 404], 404);
                     }
@@ -457,12 +480,29 @@ class ElecteursController extends Controller
                 }
     }
 
-    public function approuve_membres(string $id)
+    public function obtenir_un_electeur_non_adhere(string $id)
     {
         try {
-        $electeur = DB::table('electeurs')->where('id', $id)->first();
-                if ($electeur) {
-        return response()->json(['electeur' => $electeur, 'status' => 200], 200);
+            $electeur = DB::table('electeurs')->where('id', $id)->first();
+                    if ($electeur) {
+            return response()->json(['electeur_non_adhere' => $electeur, 'status' => 200], 200);
+                    } else {
+                        return response()->json(['message' => 'Électeur non trouvé', 'status' => 404], 404);
+                    }
+                } catch (\Exception $e) {
+                    
+                    
+            // Gérez l'erreur et renvoyez une réponse d'erreur appropriée
+                    return response()->json(['message' => 'Une erreur interne s\'est produite.', 'status' => 500], 500);
+                }
+    }
+
+    public function approuve_un_electeur_membre(string $id)
+    {
+        try {
+        $electeur_membre = DB::table('electeurs')->where('id', $id)->first();
+                if ($electeur_membre) {
+        return response()->json(['electeur_membre' => $electeur_membre, 'status' => 200], 200);
                 } else {
                     return response()->json(['message' => 'Électeur non trouvé', 'status' => 404], 404);
                 }
@@ -474,167 +514,214 @@ class ElecteursController extends Controller
             }
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-
-
-    public function update(Request $request, string $id)
+    public function modifier_un_electeur_membre(Request $request, string $id)
     {    
+        $autorisations_numero_carte = false;
+        $autorisations_nom_prenom = false;
+        $autorisations_cin = false;
+        
+        $sexe = $request->sexe;
+        $numero_carte = $request->numero_carte;
+        $nom = $request->nom;
+        $prenom = $request->prenom;
+        $cin = $request->cin;
+        $axes = $request->axes;
+        $date_inscription = $request->date_inscription;
+        $sympathisant = $request->sympathisant;
+
         $photo = $request->hasFile("photo");
-        $electeur = DB::table('electeurs')->where('id', $id)->first();
+        
+        $electeur_existes = DB::table('electeurs')->where('id', $id)->exists();
+        $electeur_membre = DB::table('electeurs')->where('id', $id)->first();
+
+        if($electeur_existes){
+
+            $numero_carte_existes =  DB::table('electeurs')->where('numero_carte', $numero_carte)->exists();
+            
+            if($numero_carte_existes){
+                $verifier_numero_carte =  DB::table('electeurs')->where('numero_carte', $numero_carte)->first();
+                if($verifier_numero_carte->numero_carte == $electeur_membre->numero_carte){
+                    $autorisations_numero_carte = true;
+                }
+            }else{
+                $autorisations_numero_carte = true;
+            }
+            if($autorisations_numero_carte){
+                $existe_nom_prenom = DB::table('electeurs')->where('nom', $nom)->where('prenom', $prenom)->exists();
+
+                if($existe_nom_prenom){
+                    $verifier_nom_prenom = DB::table('electeurs')->where('nom', $nom)->where('prenom', $prenom)->first();
+
+                    if(($verifier_nom_prenom->nom == $electeur_membre->nom) && $verifier_nom_prenom->prenom == $electeur_membre->prenom){
+                        $autorisations_nom_prenom = true;
+                    }
+                }else{
+                    $autorisations_nom_prenom = true;
+                }
 
 
-        if($electeur){
+                if($autorisations_nom_prenom){
 
-            $existes =  DB::table('electeurs')->where('numero_carte', $request->numero_carte)->first();
+                    $existe_cin = DB::table('electeurs')->where('cin', $cin)->exists();
 
-            $electeurs_existe = DB::table('electeurs')
-            ->where('nom', $request->nom)
-            ->where('prenom', $request->prenom)
-            ->first();
+                    if(!$existe_cin){
+                        $autorisations_cin = true;
+                    }else{
 
-            if($existes){
-                if($electeur->numero_carte == $existes->numero_carte){
-                    if(($electeur->nom == $electeurs_existe->nom) && $electeur->prenom == $electeurs_existe->prenom){
+                        $verifier_cin = DB::table('electeurs')->where('cin', $cin)->first();
+                        if($electeur_membre->cin == $verifier_cin->cin){
+                            $autorisations_cin = true;
+                        }
+                    }
+
+                    if($autorisations_cin){
+
                         if($photo){
+                           
                             $file = $request->file('photo');
                             $extension = $file->getClientOriginalExtension();
                             $filename = time() . '.' .$extension;
                             $file->move("uploads/electeurs/", $filename);
                             $image = 'uploads/electeurs/'.$filename;
+                            
+                            DB::table('electeurs')->where('id', $id)->update([
+                                'photo' => $image,
+                                'numero_carte' => $numero_carte,
+                                'nom' => $nom,
+                                'prenom' => $prenom,
+                                'sexe' => $sexe,
+                                'cin' => $cin,
+                                'axes' => $axes,
+                                'sympathisant' => $sympathisant,
+                                'date_inscription' => $date_inscription
+                            ]);
                         }else{
-                            $image = null;
+                            DB::table('electeurs')->where('id', $id)->update([
+                                'numero_carte' => $numero_carte,
+                                'nom' => $nom,
+                                'prenom' => $prenom,
+                                'sexe' => $sexe,
+                                'cin' => $cin,
+                                'axes' => $axes,
+                                'sympathisant' => $sympathisant,
+                                'date_inscription' => $date_inscription
+                            ]);
+                            
                         }
-                        
-                        $numero_carte = $request->numero_carte;
-                        $nom = $request->nom;
-                        $prenom = $request->prenom;
-                        $ddn = $request->ddn;
-                        $ldn = $request->ldn;
-                        $sexe = $request->sexe;
-                        $cin = $request->cin;
-                        $delivrance = $request->delivrance_cin;
-                        $filieres = $request->filieres;
-                        $niveau = $request->niveau;
-                        $adresse = $request->adresse;
-                        $contact = $request->contact;
-                        $axes = $request->axes;
-                        $sympathisant = $request->sympathisant;
-                        $facebook = $request->facebook;
-                        $date_inscription = $request->date_inscription;
-        
-                        DB::table('electeurs')->where('id', $id)->update([
-                            'photo' => $image,
-                            'numero_carte' => $numero_carte,
-                            'nom' => $nom,
-                            'prenom' => $prenom,
-                            'ddn' => $ddn,
-                            'ldn' => $ldn,
-                            'sexe' => $sexe,
-                            'cin' => $cin,
-                            'delivrance_cin' => $delivrance,
-                            'filieres' => $filieres,
-                            'niveau' => $filieres,
-                            'niveau' => $niveau,
-                            'adresse' => $adresse,
-                            'contact' => $contact,
-                            'axes' => $axes,
-                            'sympathisant' => $sympathisant,
-                            'facebook' => $facebook,
-                            'date_inscription' => $date_inscription
-                        ]);
-                        
                         return response()->json([
                             'status' => 200,
                             'message' => 'Modification effectuée!',
                         ]);
+
                     }else{
                         return response()->json([
                             'status' => 404,
-                            'message' => 'L\'électeur existe déjà!',
-                        ]);
+                            'message' => 'C.I.N appartient à un autre électeur !'
+                        ]);    
                     }
+                }else{
+                    return response()->json([
+                        'status' => 404,
+                        'message' => 'Electeur existe déjà !'
+                    ]);    
                 }
             }else{
                 return response()->json([
                     'status' => 404,
-                    'message' => 'Ce numéro de carte appartient à une autre membre !',
+                    'message' => 'Ce numéro appartient à un autre électeur membre'
                 ]);
             }
         }else{
             return response()->json([
                 'status' => 404,
-                'message' => 'Électeur non trouvé !'
+                'message' => 'Aucun résultat!'
             ]);
         }
     }
    
-    public function update_electeur_non_adhere(Request $request, string $id)
+    public function modifier_un_electeur_non_adhere(Request $request, string $id)
     {    
         
+        $autorisations_nom_prenom = false;
+        $autorisations_cin = false;
+
+        $nom = $request->nom;
+        $prenom = $request->prenom;
+        $sexe = $request->sexe;
+        $cin = $request->cin;
+        $secteurs = $request->secteurs;
+        $axes = $request->axes;
+        $date_inscription = $request->date_inscription;
+
         $electeur = DB::table('electeurs')->where('id', $id)->first();
+        $electeur_existes = DB::table('electeurs')->where('id', $id)->exists();
 
-        if($electeur){
+        if($electeur_existes){
 
-             
-            $electeurs_existe = DB::table('electeurs')
-            ->where('nom', $request->nom)
-            ->where('prenom', $request->prenom)
-            ->first();
+            $existe_nom_prenom = DB::table('electeurs')->where('nom', $nom)->where('prenom', $prenom)->exists();
 
-            if(($electeurs_existe->nom == $electeur->nom) == ($electeurs_existe->prenom == $electeur->prenom)){
-                $nom = $request->nom;
-                $prenom = $request->prenom;
-                $ddn = $request->ddn;
-                $ldn = $request->ldn;
-                $sexe = $request->sexe;
-                $cin = $request->cin;
-                $delivrance = $request->delivrance_cin;
-                $adresse = $request->adresse;
-                $contact = $request->contact;
-                $axes = $request->axes;
-                $facebook = $request->facebook;
-                $secteurs = $request->secteurs;
-                $date_inscription = $request->date_inscription;
+            if($existe_nom_prenom){
+                $verifier_nom_prenom = DB::table('electeurs')->where('nom', $nom)->where('prenom', $prenom)->first();
+                if(($verifier_nom_prenom->nom == $electeur->nom) && ($verifier_nom_prenom->prenom == $electeur->prenom)){
+                    $autorisations_nom_prenom = true;
+                }
+            }else{
+                $autorisations_nom_prenom = true;
+            }
+
+            if($autorisations_nom_prenom){
+
+                $existe_cin = DB::table('electeurs')->where('cin', $cin)->exists();
+
+                if($existe_cin){
+
+                    $verifier_cin = DB::table('electeurs')->where('cin', $cin)->first();
+                    
+                    if($electeur->cin == $verifier_cin->cin){
+                        $autorisations_cin = true;
+                    }
+                }else{
+                    $autorisations_cin = true;
+                }
+
+                if($autorisations_cin){
+
+                    DB::table('electeurs')->where('id', $id)->update([
+                        'nom' => $nom,
+                        'prenom' => $prenom,
+                        'sexe' => $sexe,
+                        'cin' => $cin,
+                        'axes' => $axes,
+                        'secteurs' => $secteurs,
+                        'date_inscription' => $date_inscription
+                    ]);
                 
-                DB::table('electeurs')->where('id', $id)->update([
-                    'nom' => $nom,
-                    'prenom' => $prenom,
-                    'ddn' => $ddn,
-                    'ldn' => $ldn,
-                    'sexe' => $sexe,
-                    'cin' => $cin,
-                    'delivrance_cin' => $delivrance,
-                    'adresse' => $adresse,
-                    'contact' => $contact,
-                    'axes' => $axes,
-                    'secteurs' => $secteurs,
-                    'facebook' => $facebook,
-                    'date_inscription' => $date_inscription
-                ]);
-                
-                return response()->json([
-                    'status' => 200,
-                    'message' => 'Modification effectuée!',
-                ]);
+                    return response()->json([
+                        'status' => 200,
+                        'message' => 'Modification effectuée!',
+                    ]);
+                }else{
+                    return response()->json([
+                        'status' => 404,
+                        'message' => 'C.I.N appartient à un autre électeur !',
+                    ]);    
+                }
+
             }else{
                 return response()->json([
                     'status' => 404,
-                    'message' => 'L\'électeur existe déjà!',
+                    'message' => 'L\'électeur existe déjà !',
                 ]);
             }
+
         }else{
             return response()->json([
                 'status' => 404,
-                'message' => 'Aucun résultat !',
-            ]);
+                'message' => 'Aucun résultat!',
+            ]); 
         }
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(string $electeur_id)
     {
         try {
@@ -651,5 +738,5 @@ class ElecteursController extends Controller
                 // Gérez l'erreur et renvoyez une réponse d'erreur appropriée
                 return response()->json(['message' => 'Une erreur interne s\'est produite.', 'status' => 500]);
             }
+        }
     }
-}

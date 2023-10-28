@@ -18,57 +18,53 @@ Route::middleware(['auth:sanctum'])->group(function(){
              'status' => 200]);
     });
 
-    // Afficher listes des électeurs membres AEUTNA
-    Route::get('membres', [ElecteursController::class, 'membres']);
+    /** --------------------------------- Récupérer user authentifier ------------------------------**/
+    Route::get('getUser', [AuthController::class, 'getUserId']);
 
-    // Afficher listes des électeurs membres AEUTNA
-    Route::get('resultat', [ElecteursController::class, 'resultat']);
+    /** ------------------------------------------- Statistiques ------------------------------------ **/
+    Route::get('statistiques', [ElecteursController::class, 'statistiques']);
 
-    // Afficher listes des électeurs non adhéré AEUTNA
-    Route::get('non_adhere', [ElecteursController::class, 'non_adhere']);
-    
-    // Afficher tous les électeurs
-    Route::get('liste_des_electeurs', [ElecteursController::class, 'liste_des_electeurs']); 
-    
-    // Afficher tous les électeurs membres
-    Route::get('liste_des_electeurs_membres', [ElecteursController::class, 'liste_des_electeurs_membres']); 
-    
-    // Afficher tous les électeurs non adhéré
-    Route::get('liste_des_electeurs_non_adhere', [ElecteursController::class, 'liste_des_electeurs_non_adhere']); 
-
-    // Créer un électeur membres AEUTNA
-    Route::post('store-electeur', [ElecteursController::class, 'store']);   
-
-    // Créer un électeur non adhéré (nouveau bachelier)
-    Route::post('store-electeur-non-adhere', [ElecteursController::class, 'nouveau_bachelier']);   
-
-    // Recherche un membres AEUTNA
-    Route::get('recherche_membres/{propriete}/{value}', [ElecteursController::class, 'recherche_membres']);   
-    
-    // Recherche un membres AEUTNA
-    Route::get('recherche_membre_electeurs/{propriete}/{value}', [ElecteursController::class, 'recherche_membre_electeurs']);   
-
-    // Recherche un membres AEUTNA
-    Route::get('recherche_electeurs_non_adhere/{propriete}/{value}', [ElecteursController::class, 'recherche_electeurs_non_adhere']);   
-    
-    // Créer un électeur nouveau bachelier
-    Route::post('nouveau-bachelier-electeur', [ElecteursController::class, 'nouveau_bachelier']);   // Créer un nouveau bachelier
-    Route::get('show-electeur/{id}', [ElecteursController::class, 'show']); // Afficher un électeur
-    Route::get('approuve-membres/{id}', [ElecteursController::class, 'approuve_membres']); // Approuve membres
-    Route::post('desapprouve-membre-electeur/{id}', [ElecteursController::class, 'desapprouve_membre_electeur']); // Approuve membres
-    Route::get('edit-electeur/{id}', [ElecteursController::class, 'edit']); // Modifier un électeur
-    Route::post('update-electeur/{id}', [ElecteursController::class, 'update']); // Modifier un électeur
-    Route::post('update-electeur-non-adhere/{id}', [ElecteursController::class, 'update_electeur_non_adhere']); // Modifier un électeur non adhéré
-
-    Route::post('valide_membres_electeurs/{id}', [ElecteursController::class, 'valide_membres_electeurs']); // Approuve membres électeur
-    Route::post('delete-electeur/{id}', [ElecteursController::class, 'destroy']); // Supprimer une électeur
-   
-    // Déconnexion
+    /** ------------------------------------- Déconnection -------------------------------------------**/
     Route::post('logout', [AuthController::class, 'logout']);
+
+
+    /** -------------------------------------------  Electeurs Membres -------------------------------- **/
+    Route::get('liste_des_electeurs_membres', [ElecteursController::class, 'liste_des_electeurs_membres']);
+    Route::get('recherche_un_electeur_membre/{propriete}/{value}', [ElecteursController::class, 'recherche_un_electeur_membre']);   
+    Route::post('ajouter_un_electeur_membre', [ElecteursController::class, 'ajouter_un_electeur_membre']);   
+    Route::get('afficher_un_electeur_membre/{id}', [ElecteursController::class, 'afficher_un_electeur_membre']);
+    Route::get('obtenir_un_electeur/{id}', [ElecteursController::class, 'obtenir_un_electeur']);
+    Route::post('modifier_un_electeur_membre/{id}', [ElecteursController::class, 'modifier_un_electeur_membre']);
+
+    /** --------------------------------------------- Electeurs Non Adhére ------------------------------------- **/
+    Route::get('liste_des_electeurs_non_adheres', [ElecteursController::class, 'liste_des_electeurs_non_adheres']);
+    Route::post('ajouter_un_electeur_non_adhere', [ElecteursController::class, 'ajouter_un_electeur_non_adhere']);  
+    Route::post('ajouter_un_electeur_non_adhere', [ElecteursController::class, 'ajouter_un_electeur_non_adhere']); 
+    Route::get('obtenir_un_electeur_non_adhere/{id}', [ElecteursController::class, 'obtenir_un_electeur_non_adhere']);
+    Route::get('afficher_un_electeur_non_adhere/{id}', [ElecteursController::class, 'afficher_un_electeur_non_adhere']);
+    Route::post('modifier_un_electeur_non_adhere/{id}', [ElecteursController::class, 'modifier_un_electeur_non_adhere']); // Modifier un électeur non adhéré
+    Route::get('recherche_electeur_non_adhere/{propriete}/{value}', [ElecteursController::class, 'recherche_electeur_non_adhere']);   
     
-    // users
-    Route::get('users', [UsersController::class, 'index']);   // Affichier des utilisateurs
-    // Route::get('see-users/{id}', [UsersController::class, 'show']);   // Voir un utilisateur
-    // Route::put('update-users/{id}', [UsersController::class, 'update']);   // Modifier un utilisateur
-    // Route::post('store-users', [UsersController::class, 'store']);   // Créer un utilisateur
+    /** ----------------------------------------------- Electeurs Votes ------------------------------------ **/
+    Route::get('liste_des_electeurs_votes', [ElecteursController::class, 'liste_des_electeurs_votes']); 
+    Route::get('recherche_un_electeur_vote/{propriete}/{value}', [ElecteursController::class, 'recherche_un_electeur_vote']);   
+    Route::get('afficher_un_electeur_membre_vote/{id}', [ElecteursController::class, 'afficher_un_electeur_membre_vote']);
+    Route::get('afficher_un_electeur_non_adhere_vote/{id}', [ElecteursController::class, 'afficher_un_electeur_non_adhere_vote']);
+    Route::get('approuve_un_electeur_membre/{id}', [ElecteursController::class, 'approuve_un_electeur_membre']);
+    Route::post('valide_un_electeur_membre/{id}', [ElecteursController::class, 'valide_un_electeur_membre']); 
+    Route::post('desapprouve_un_electeur_vote/{id}', [ElecteursController::class, 'desapprouve_un_electeur_vote']);
+
+    Route::post('delete-electeur/{id}', [ElecteursController::class, 'destroy']); // Supprimer une électeur
+    
+    /*------------------------------------------------------ Utilisateurs -----------------------------------**/
+
+    Route::get('liste_des_utilisateurs', [UsersController::class, 'liste_des_utilisateurs']);
+    Route::get('afficher_un_utilisateur/{id}', [UsersController::class, 'afficher_un_utilisateur']);
+    Route::get('recherche_un_utilisateur/{propriete}/{value}', [UsersController::class, 'recherche_un_utilisateur']);   
+    Route::get('obtenir_un_utilisateur/{id}', [UsersController::class, 'obtenir_un_utilisateur']); 
+    Route::post('modifier_un_utilisateur/{id}', [UsersController::class, 'modifier_un_utilisateur']);
+    Route::post('supprimer_un_utilisateur/{id}', [UsersController::class, 'supprimer_un_utilisateur']);
+
+    /**------------------------------------------------ Profile --------------------------------------------*/
+    Route::post('modifier_profile/{id}', [UsersController::class, 'modifier_un_utilisateur']);
 });
