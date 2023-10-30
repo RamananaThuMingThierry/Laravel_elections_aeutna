@@ -244,10 +244,14 @@ class ElecteursController extends Controller
 
             if(!$verifier_nom_prenom){
 
-                $verifier_cin =  DB::table('electeurs')
-                ->where('cin', $cin)
-                ->exists();
-
+                if($cin == null){
+                    $verifier_cin = false;
+                }else{
+                    $verifier_cin =  DB::table('electeurs')
+                    ->where('cin', $cin)
+                    ->exists();    
+                }
+                
                 if(!$verifier_cin){
                     if($photo){
                         $file = $request->file('photo');
@@ -319,9 +323,14 @@ class ElecteursController extends Controller
                 'message' => 'Vous avez déjà votes!.',
             ]); 
         }else{
-            $verifier_cin = DB::table('electeurs')
-            ->where('cin', $cin)
-            ->exists();
+
+            if($cin == null){
+                $verifier_cin = false;
+            }else{
+                $verifier_cin =  DB::table('electeurs')
+                ->where('cin', $cin)
+                ->exists();    
+            }
 
             if($verifier_cin){
                 return response()->json([
