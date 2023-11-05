@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('electeurs', function (Blueprint $table) {
             $table->id();
             $table->string('photo')->nullable();
-            $table->integer('numero_carte')->nullable()->unique(); 
+            $table->integer('numero_carte')->nullable(); 
             $table->string('nom', 255)->nullable();
             $table->string('prenom', 255)->nullable();
             $table->string('sexe', 10)->nullable()->comment('Genre (Male ou Femelle)');
@@ -25,7 +25,7 @@ return new class extends Migration
             $table->string('secteurs')->nullable();
             $table->integer('status')->default(0);
             $table->unique(['nom', 'prenom', 'cin']);
-            $table->string('votes', 50)->nullable()->comment('Piège jointe utilisé pour les élections');
+            $table->string('votes', 255)->nullable()->comment('Piège jointe utilisé pour les élections');
         });
     }
 

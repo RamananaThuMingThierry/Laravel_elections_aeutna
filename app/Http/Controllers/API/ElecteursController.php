@@ -3,16 +3,24 @@
 namespace App\Http\Controllers\API;
 
 use DateTime;
+use PDF;
 use App\Models\electeurs;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 
-use Illuminate\Support\Facades\Date;
-use function PHPUnit\Framework\isEmpty;
-
 class ElecteursController extends Controller
 {
+
+    public function export_liste_des_electeurs_membres(){
+        $data = DB::table('electeurs')->select('nom', 'prenom')->get();
+       
+        $pdf = app('dompdf.wrapper')->loadView('pdf.export', compact('data'));
+
+        // Téléchargez le PDF ou affichez-le dans le navigateur
+        return $pdf->download('exported-data.pdf');
+    }
+
     public function statistiques()
     {
         $MembresAEUTNA = electeurs::where('numero_carte', '<>', null)->get();
@@ -82,14 +90,14 @@ class ElecteursController extends Controller
 
             $recherche_un_electeur_membre = electeurs::where($propriete,'like',"%$value%")->where('numero_carte', '<>', null)->where('status', 1)->get();
 
-            if($recherche_un_electeur_membre->count() != 0){
-                return response()->json([
-                    'status' => 400,
-                    'message' => 'Vous avez déjà votes !'
-                ]); 
-            }else{
+            // if($recherche_un_electeur_membre->count() != 0){
+            //     return response()->json([
+            //         'status' => 400,
+            //         'message' => 'Vous avez déjà votes !'
+            //     ]); 
+            // }else{
                 $recherche_un_electeur_membre = electeurs::where($propriete,'like', "%$value%")->where('numero_carte', '<>', null)->where('status', 0)->get();    
-            }
+            // }
         }
 
         if($recherche_un_electeur_membre->count() != 0){
@@ -100,7 +108,7 @@ class ElecteursController extends Controller
         }else{
             return response()->json([
                 'status' => 404,
-                'message' => 'Aucun résultat !'
+                'message' => 'Vérifiez s\'il avait déjà vote'
             ]);
         }
     }
@@ -156,16 +164,16 @@ class ElecteursController extends Controller
             }
         }else{
 
-            $electeur = electeurs::where($propriete,'like',"%$value%")->where('status', 0)->get();
+            // $electeur = electeurs::where($propriete,'like',"%$value%")->where('status', 0)->get();
 
-            if($electeur->count() != 0){
-                return response()->json([
-                    'status' => 400,
-                    'message' => 'Vous n\'avez pas encore votes !'
-                ]); 
-            }else{
+            // if($electeur->count() != 0){
+            //     return response()->json([
+            //         'status' => 400,
+            //         'message' => 'Vous n\'avez pas encore votes !'
+            //     ]); 
+            // }else{
                 $electeur = electeurs::where($propriete,'like', "%$value%")->where('status', 1)->get();    
-            }
+            // }
         }
 
         if($electeur->count() != 0){
@@ -226,77 +234,68 @@ class ElecteursController extends Controller
         $photo = $request->hasFile("photo");
         $numero_carte = $request->numero_carte;
         $nom = $request->nom;
-        $prenom = $request->prenom;
+        $prenom = $request->prenom ?? '';
         $sexe = $request->sexe;
         $cin = $request->cin;
         $axes = $request->axes;
         $sympathisant = $request->sympathisant;
         $date_inscription = $request->date_inscription;
-        $numero_carte_existes = DB::table('electeurs')->where('numero_carte', $numero_carte)
-                  ->exists();
 
-        if(!$numero_carte_existes){     
-            
-            $verifier_nom_prenom = DB::table('electeurs')
-            ->where('nom', $nom)
-            ->where('prenom', $prenom)
+        $concatenation_nom_prenom = $nom .' '. $prenom;
+
+        $verifier_conctatenation_nom_prenom = DB::table('electeurs')
+            ->select('*')
+            ->whereRaw('CONCAT(nom, " ", prenom) = ?', [$concatenation_nom_prenom])
             ->exists();
-
-            if(!$verifier_nom_prenom){
-
-                if($cin == null){
-                    $verifier_cin = false;
+            
+        if(!$verifier_conctatenation_nom_prenom){
+            if($cin == null){
+                $verifier_cin = false;
+            }else{
+                $verifier_cin =  DB::table('electeurs')
+                ->where('cin', $cin)
+                ->exists();    
+            }
+            
+            if(!$verifier_cin){
+                if($photo){
+                    $file = $request->file('photo');
+                    $extension = $file->getClientOriginalExtension();
+                    $filename = time() . '.' .$extension;
+                    $file->move("uploads/electeurs/", $filename);
+                    $image = 'uploads/electeurs/'.$filename;
                 }else{
-                    $verifier_cin =  DB::table('electeurs')
-                    ->where('cin', $cin)
-                    ->exists();    
+                    $image = null;
                 }
-                
-                if(!$verifier_cin){
-                    if($photo){
-                        $file = $request->file('photo');
-                        $extension = $file->getClientOriginalExtension();
-                        $filename = time() . '.' .$extension;
-                        $file->move("uploads/electeurs/", $filename);
-                        $image = 'uploads/electeurs/'.$filename;
-                    }else{
-                        $image = null;
-                    }
-        
-                    DB::table('electeurs')->insert([
-                        'photo' => $image,
-                        'numero_carte' => $numero_carte,
-                        'nom' => $nom,
-                        'prenom' => $prenom,
-                        'sexe' => $sexe,
-                        'cin' => $cin,
-                        'axes' => $axes,
-                        'sympathisant' => $sympathisant,
-                        'date_inscription' => $date_inscription
-                    ]);
-        
-                    return response()->json([
-                        'status' => 200,
-                        'message' => 'Enregistrement effectué !',
-                    ]);
-                }else{
-                    return response()->json([
-                        'status' => 404,
-                        'message' => 'C.I.N existe déjà !',
-                    ]); 
-                }
+    
+                DB::table('electeurs')->insert([
+                    'photo' => $image,
+                    'numero_carte' => $numero_carte,
+                    'nom' => $nom,
+                    'prenom' => $prenom,
+                    'sexe' => $sexe,
+                    'cin' => $cin,
+                    'axes' => $axes,
+                    'sympathisant' => $sympathisant,
+                    'date_inscription' => $date_inscription
+                ]);
+    
+                return response()->json([
+                    'status' => 200,
+                    'message' => 'Enregistrement effectué !',
+                ]);
             }else{
                 return response()->json([
                     'status' => 404,
-                    'message' => 'L\'électeur existe déjà !',
+                    'message' => 'C.I.N existe déjà !',
                 ]); 
             }
         }else{
             return response()->json([
                 'status' => 404,
-                'message' => 'Votre numéro de carte existe déjà !',
-            ]); 
-        }
+                'message' => 'L\'électeur existe déjà dans la base de données!'
+            ]);
+        }     
     }
 
     public function ajouter_un_electeur_non_adhere(Request $request)
@@ -306,24 +305,20 @@ class ElecteursController extends Controller
         $cin = $request->cin;
         $sexe = $request->sexe;
         $axes = $request->axes;
-        $votes = 'Convocation';
+        $votes = 'Réléve de notes';
         $sympathisant = 'Non';
         $status = 1;
         $secteurs = $request->secteurs;
         $date_inscription = now();
-        
-        $verifier_nom_prenom = DB::table('electeurs')
-        ->where('nom', $nom)
-        ->where('prenom', $prenom)
-        ->exists();
-        
-        if($verifier_nom_prenom){
-            return response()->json([
-                'status' => 400,
-                'message' => 'Vous avez déjà votes!.',
-            ]); 
-        }else{
 
+        $concatenation_nom_prenom = $nom.' '.$prenom;
+
+        $verifier_conctatenation_nom_prenom = DB::table('electeurs')
+            ->select('*')
+            ->whereRaw('CONCAT(nom, " ", prenom) = ? ', [$concatenation_nom_prenom])
+            ->exists();
+
+        if(!$verifier_conctatenation_nom_prenom){
             if($cin == null){
                 $verifier_cin = false;
             }else{
@@ -356,8 +351,13 @@ class ElecteursController extends Controller
                     'message' => 'Enregistrement effectué !',
                 ]);
             }
+        }else{
+            return response()->json([
+                'status' => 404,
+                'message' => 'Désolé ! L\'électeur existe déjà !'
+            ]);
         }
-    
+
     }
 
     public function valide_un_electeur_membre(Request $request, string $id){
@@ -532,7 +532,7 @@ class ElecteursController extends Controller
         $sexe = $request->sexe;
         $numero_carte = $request->numero_carte;
         $nom = $request->nom;
-        $prenom = $request->prenom;
+        $prenom = $request->prenom ?? '';
         $cin = $request->cin;
         $axes = $request->axes;
         $date_inscription = $request->date_inscription;
@@ -544,101 +544,90 @@ class ElecteursController extends Controller
         $electeur_membre = DB::table('electeurs')->where('id', $id)->first();
 
         if($electeur_existes){
+            $existe_nom_prenom = DB::table('electeurs')->where('nom', $nom)->where('prenom', $prenom)->exists();
 
-            $numero_carte_existes =  DB::table('electeurs')->where('numero_carte', $numero_carte)->exists();
-            
-            if($numero_carte_existes){
-                $verifier_numero_carte =  DB::table('electeurs')->where('numero_carte', $numero_carte)->first();
-                if($verifier_numero_carte->numero_carte == $electeur_membre->numero_carte){
-                    $autorisations_numero_carte = true;
-                }
-            }else{
-                $autorisations_numero_carte = true;
-            }
-            if($autorisations_numero_carte){
-                $existe_nom_prenom = DB::table('electeurs')->where('nom', $nom)->where('prenom', $prenom)->exists();
+            if($existe_nom_prenom){
+                $verifier_nom_prenom = DB::table('electeurs')->where('nom', $nom)->where('prenom', $prenom)->first();
 
-                if($existe_nom_prenom){
-                    $verifier_nom_prenom = DB::table('electeurs')->where('nom', $nom)->where('prenom', $prenom)->first();
-
-                    if(($verifier_nom_prenom->nom == $electeur_membre->nom) && $verifier_nom_prenom->prenom == $electeur_membre->prenom){
-                        $autorisations_nom_prenom = true;
-                    }
-                }else{
+                if(($verifier_nom_prenom->nom == $electeur_membre->nom) && $verifier_nom_prenom->prenom == $electeur_membre->prenom){
                     $autorisations_nom_prenom = true;
                 }
+            }else{
+                $autorisations_nom_prenom = true;
+            }
 
 
-                if($autorisations_nom_prenom){
+            if($autorisations_nom_prenom){
 
-                    $existe_cin = DB::table('electeurs')->where('cin', $cin)->exists();
+                if($cin == null){
+                    $existe_cin = false;
+                }else{
+                    $existe_cin =  DB::table('electeurs')
+                    ->where('cin', $cin)
+                    ->exists();    
+                }
 
-                    if(!$existe_cin){
+                if(!$existe_cin){
+                    $autorisations_cin = true;
+                }else{
+
+                    $verifier_cin = DB::table('electeurs')->where('cin', $cin)->first();
+
+                    if($electeur_membre->cin == $verifier_cin->cin){
                         $autorisations_cin = true;
-                    }else{
-
-                        $verifier_cin = DB::table('electeurs')->where('cin', $cin)->first();
-                        if($electeur_membre->cin == $verifier_cin->cin){
-                            $autorisations_cin = true;
-                        }
                     }
+                }
 
-                    if($autorisations_cin){
+                if($autorisations_cin){
 
-                        if($photo){
-                           
-                            $file = $request->file('photo');
-                            $extension = $file->getClientOriginalExtension();
-                            $filename = time() . '.' .$extension;
-                            $file->move("uploads/electeurs/", $filename);
-                            $image = 'uploads/electeurs/'.$filename;
-                            
-                            DB::table('electeurs')->where('id', $id)->update([
-                                'photo' => $image,
-                                'numero_carte' => $numero_carte,
-                                'nom' => $nom,
-                                'prenom' => $prenom,
-                                'sexe' => $sexe,
-                                'cin' => $cin,
-                                'axes' => $axes,
-                                'sympathisant' => $sympathisant,
-                                'date_inscription' => $date_inscription
-                            ]);
-                        }else{
-                            DB::table('electeurs')->where('id', $id)->update([
-                                'numero_carte' => $numero_carte,
-                                'nom' => $nom,
-                                'prenom' => $prenom,
-                                'sexe' => $sexe,
-                                'cin' => $cin,
-                                'axes' => $axes,
-                                'sympathisant' => $sympathisant,
-                                'date_inscription' => $date_inscription
-                            ]);
-                            
-                        }
-                        return response()->json([
-                            'status' => 200,
-                            'message' => 'Modification effectuée!',
+                    if($photo){
+                        
+                        $file = $request->file('photo');
+                        $extension = $file->getClientOriginalExtension();
+                        $filename = time() . '.' .$extension;
+                        $file->move("uploads/electeurs/", $filename);
+                        $image = 'uploads/electeurs/'.$filename;
+                        
+                        DB::table('electeurs')->where('id', $id)->update([
+                            'photo' => $image,
+                            'numero_carte' => $numero_carte,
+                            'nom' => $nom,
+                            'prenom' => $prenom ?? '',
+                            'sexe' => $sexe,
+                            'cin' => $cin,
+                            'axes' => $axes,
+                            'sympathisant' => $sympathisant,
+                            'date_inscription' => $date_inscription
                         ]);
-
                     }else{
-                        return response()->json([
-                            'status' => 404,
-                            'message' => 'C.I.N appartient à un autre électeur !'
-                        ]);    
+                        DB::table('electeurs')->where('id', $id)->update([
+                            'numero_carte' => $numero_carte,
+                            'nom' => $nom,
+                            'prenom' => $prenom ?? '',
+                            'sexe' => $sexe,
+                            'cin' => $cin,
+                            'axes' => $axes,
+                            'sympathisant' => $sympathisant,
+                            'date_inscription' => $date_inscription
+                        ]);
+                        
                     }
+                    return response()->json([
+                        'status' => 200,
+                        'message' => 'Modification effectuée!',
+                    ]);
+
                 }else{
                     return response()->json([
                         'status' => 404,
-                        'message' => 'Electeur existe déjà !'
+                        'message' => 'C.I.N appartient à un autre électeur !'
                     ]);    
                 }
             }else{
                 return response()->json([
                     'status' => 404,
-                    'message' => 'Ce numéro appartient à un autre électeur membre'
-                ]);
+                    'message' => 'Electeur existe déjà !'
+                ]);    
             }
         }else{
             return response()->json([
@@ -655,7 +644,7 @@ class ElecteursController extends Controller
         $autorisations_cin = false;
 
         $nom = $request->nom;
-        $prenom = $request->prenom;
+        $prenom = $request->prenom ?? '';
         $sexe = $request->sexe;
         $cin = $request->cin;
         $secteurs = $request->secteurs;
@@ -680,7 +669,13 @@ class ElecteursController extends Controller
 
             if($autorisations_nom_prenom){
 
-                $existe_cin = DB::table('electeurs')->where('cin', $cin)->exists();
+                if($cin == null){
+                    $existe_cin = false;
+                }else{
+                    $existe_cin =  DB::table('electeurs')
+                    ->where('cin', $cin)
+                    ->exists();    
+                }
 
                 if($existe_cin){
 

@@ -29,6 +29,7 @@ Route::middleware(['auth:sanctum'])->group(function(){
 
 
     /** -------------------------------------------  Electeurs Membres -------------------------------- **/
+    Route::get('export_liste_des_electeurs_membres', [ElecteursController::class, 'export_liste_des_electeurs_membres']);
     Route::get('liste_des_electeurs_membres', [ElecteursController::class, 'liste_des_electeurs_membres']);
     Route::get('recherche_un_electeur_membre/{propriete}/{value}', [ElecteursController::class, 'recherche_un_electeur_membre']);   
     Route::post('ajouter_un_electeur_membre', [ElecteursController::class, 'ajouter_un_electeur_membre']);   
