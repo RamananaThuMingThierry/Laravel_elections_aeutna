@@ -39,7 +39,7 @@ class ElecteursController extends Controller
 
     public function liste_des_electeurs_membres()
     {
-        $liste_des_electeurs_membres = electeurs::orderBy('numero_carte', 'desc')->where('numero_carte', '<>', null)
+        $liste_des_electeurs_membres = electeurs::orderBy('nom', 'asc')->where('numero_carte', '<>', null)
             ->where('status', 0)
             ->get();
         return response()->json([

@@ -11,6 +11,7 @@
         "vite": "^4.0.0"
     },
     "dependencies": {
+        "react-export-table-to-excel": "^1.0.6",
         "react-to-print": "^2.14.15"
     }
 }
