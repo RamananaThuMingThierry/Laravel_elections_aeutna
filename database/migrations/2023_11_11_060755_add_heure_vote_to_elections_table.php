@@ -12,17 +12,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('electeurs', function (Blueprint $table) {
-            // $table->time('')
+            $table->time('heure_vote')->nullable()->comment('Heure du vote');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('electeurs', function (Blueprint $table) {
-            //
+            $table->dropColumn('heure_vote');
         });
     }
 };

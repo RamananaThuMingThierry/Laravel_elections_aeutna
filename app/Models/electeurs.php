@@ -23,6 +23,7 @@ class electeurs extends Model
         'date_inscription',
         'secteurs',
         'status',
+        'heure_vote',
         'votes'
     ];
 

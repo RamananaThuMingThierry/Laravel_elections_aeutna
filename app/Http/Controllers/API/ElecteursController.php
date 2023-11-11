@@ -8,32 +8,49 @@ use App\Models\electeurs;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
+use Carbon\Carbon;
 
 class ElecteursController extends Controller
 {
-
-    public function export_liste_des_electeurs_membres(){
-        $data = DB::table('electeurs')->select('nom', 'prenom')->get();
-       
-        $pdf = app('dompdf.wrapper')->loadView('pdf.export', compact('data'));
-
-        // Téléchargez le PDF ou affichez-le dans le navigateur
-        return $pdf->download('exported-data.pdf');
-    }
-
     public function statistiques()
     {
         $MembresAEUTNA = electeurs::where('numero_carte', '<>', null)->get();
         $ElecteursMembres = electeurs::where('numero_carte', '<>', null)->where('status', 1)->get();
         $ElecteursNonAdheres = electeurs::where('numero_carte', null)->where('status', 1)->get();
         $ElecteursVotes = electeurs::where('status', 1)->get();
+
+        $nombre_67h = electeurs::where('secteurs', '67 h')->where('status', 1)->get();
+        $nombre_Amphipo = electeurs::where('secteurs', 'Ambohipo')->where('status', 1)->get();
+        $nombre_Ambolikandrina = electeurs::where('secteurs', 'Ambolikandrina')->where('status', 1)->get();
+        $nombre_Ankatso_1 = electeurs::where('secteurs', 'Ankatso 1')->where('status', 1)->get();
+        $nombre_Ankatso_2 = electeurs::where('secteurs', 'Ankatso 2')->where('status', 1)->get();
+        $nombre_Centre_Ville = electeurs::where('secteurs', 'Centre Ville')->where('status', 1)->get();
+        $nombre_Itaosy = electeurs::where('secteurs', 'Itaosy')->where('status', 1)->get();
+        $nombre_Ivato = electeurs::where('secteurs', 'Ivato')->where('status', 1)->get();
+        $nombre_Votovorona = electeurs::where('secteurs', 'Votovorona')->where('status', 1)->get();
         
+        $nombre_cin = electeurs::where('votes' , 'C.I.N')->where('status', 1)->get();
+        $nombre_copie = electeurs::where('votes' , 'Copie')->where('status', 1)->get();
+        $nombre_releve_de_notes = electeurs::where('votes' , 'Relève de notes')->where('status', 1)->get();
+
         return response()->json([
             'status' => 200,
             'MembresAEUTNA' => $MembresAEUTNA->count(),
             'ElecteursMembres' => $ElecteursMembres->count(),
             'ElecteursNonAdheres' => $ElecteursNonAdheres->count(),
-            'Electeursvotes' => $ElecteursVotes->count()
+            'Electeursvotes' => $ElecteursVotes->count(),
+            'nombre_67h' => $nombre_67h->count(),
+            'nombre_Ambohipo' => $nombre_Amphipo->count(),
+            'nombre_Ambolikandrina' => $nombre_Ambolikandrina->count(),
+            'nombre_Ankatso_1' => $nombre_Ankatso_1->count(),
+            'nombre_Ankatso_2' => $nombre_Ankatso_2->count(),
+            'nombre_Centre_Ville' => $nombre_Centre_Ville->count(),
+            'nombre_Itaosy' => $nombre_Itaosy->count(),
+            'nombre_Ivato' => $nombre_Ivato->count(),
+            'nombre_Votovorona' => $nombre_Votovorona->count(),
+            'nombre_cin' => $nombre_cin->count(),
+            'nombre_copie' => $nombre_copie->count(),
+            'nombre_releve_de_notes' => $nombre_releve_de_notes->count(),
         ]);
     }
 
@@ -150,6 +167,14 @@ class ElecteursController extends Controller
         $bool = false;
         if($propriete == 'numero_carte'){
             $bool = true;
+        }else if($propriete == 'cin'){
+            if(strlen($value) != 12){
+                return response()->json([
+                    'status' => 400,
+                    'message' => 'C.I.N invalide !'
+                ]); 
+            }
+            $bool = true;
         }
 
         if($bool){
@@ -222,7 +247,7 @@ class ElecteursController extends Controller
 
     public function liste_des_electeurs_votes()
     {
-        $electeurs_votes = electeurs::where('status', 1)->get();
+        $electeurs_votes = electeurs::orderBy('heure_vote', 'desc')->where('status', 1)->get();
         return response()->json([
             'status' => 200,
             'electeurs_votes' => $electeurs_votes
@@ -305,7 +330,7 @@ class ElecteursController extends Controller
         $cin = $request->cin;
         $sexe = $request->sexe;
         $axes = $request->axes;
-        $votes = 'Réléve de notes';
+        $votes = $request->votes;
         $sympathisant = 'Non';
         $status = 1;
         $secteurs = $request->secteurs;
@@ -342,6 +367,7 @@ class ElecteursController extends Controller
                     'votes' => $votes,
                     'status' => $status,
                     'secteurs' => $secteurs,
+                    'heure_vote' => Carbon::now()->addHour(3),
                     'sympathisant' => $sympathisant,
                     'date_inscription' => $date_inscription
                 ]);
@@ -371,6 +397,7 @@ class ElecteursController extends Controller
                 DB::table('electeurs')->where('id', $id)->update([
                     'secteurs' => $request->secteurs,
                     'status' => 1,
+                    'heure_vote' => Carbon::now()->addHour(3),
                     'votes' => $request->votes
                 ]);
                 
@@ -458,6 +485,7 @@ class ElecteursController extends Controller
             DB::table('electeurs')->where('id', $id)->update([
                 'secteurs' => null,
                 'status' => 0,
+                'heure_vote' => null,
                 'votes' => null
             ]);
             return response()->json([
@@ -509,18 +537,16 @@ class ElecteursController extends Controller
     public function approuve_un_electeur_membre(string $id)
     {
         try {
-        $electeur_membre = DB::table('electeurs')->where('id', $id)->first();
-                if ($electeur_membre) {
-        return response()->json(['electeur_membre' => $electeur_membre, 'status' => 200], 200);
-                } else {
-                    return response()->json(['message' => 'Électeur non trouvé', 'status' => 404], 404);
-                }
-            } catch (\Exception $e) {
-                
-                
-        // Gérez l'erreur et renvoyez une réponse d'erreur appropriée
-                return response()->json(['message' => 'Une erreur interne s\'est produite.', 'status' => 500], 500);
-            }
+            $electeur_membre = DB::table('electeurs')->where('id', $id)->first();
+                    if ($electeur_membre) {
+            return response()->json(['electeur_membre' => $electeur_membre, 'status' => 200], 200);
+                    } else {
+                        return response()->json(['message' => 'Électeur non trouvé', 'status' => 404], 404);
+                    }
+        } catch (\Exception $e) {
+            // Gérez l'erreur et renvoyez une réponse d'erreur appropriée
+            return response()->json(['message' => 'Une erreur interne s\'est produite.', 'status' => 500], 500);
+        }
     }
 
     public function modifier_un_electeur_membre(Request $request, string $id)
@@ -649,13 +675,13 @@ class ElecteursController extends Controller
         $cin = $request->cin;
         $secteurs = $request->secteurs;
         $axes = $request->axes;
+        $votes = $request->votes;
         $date_inscription = $request->date_inscription;
-
+        $heure_vote = Carbon::now()->addHour(3);
         $electeur = DB::table('electeurs')->where('id', $id)->first();
         $electeur_existes = DB::table('electeurs')->where('id', $id)->exists();
 
         if($electeur_existes){
-
             $existe_nom_prenom = DB::table('electeurs')->where('nom', $nom)->where('prenom', $prenom)->exists();
 
             if($existe_nom_prenom){
@@ -696,6 +722,8 @@ class ElecteursController extends Controller
                         'sexe' => $sexe,
                         'cin' => $cin,
                         'axes' => $axes,
+                        'votes' => $votes,
+                        'heure_vote' => $heure_vote,
                         'secteurs' => $secteurs,
                         'date_inscription' => $date_inscription
                     ]);
