@@ -24,7 +24,8 @@ class electeurs extends Model
         'secteurs',
         'status',
         'heure_vote',
-        'votes'
+        'votes',
+        'adhesion'
     ];
 
     public $timestamps = false;

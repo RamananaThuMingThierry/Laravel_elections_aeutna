@@ -33,6 +33,9 @@ class ElecteursController extends Controller
         $nombre_copie = electeurs::where('votes' , 'Copie')->where('status', 1)->get();
         $nombre_releve_de_notes = electeurs::where('votes' , 'Relève de notes')->where('status', 1)->get();
 
+
+        $nombre_nouveau_adhere = electeurs::where('adhesion', 1)->where('status', 1)->get();
+
         return response()->json([
             'status' => 200,
             'MembresAEUTNA' => $MembresAEUTNA->count(),
@@ -51,6 +54,7 @@ class ElecteursController extends Controller
             'nombre_cin' => $nombre_cin->count(),
             'nombre_copie' => $nombre_copie->count(),
             'nombre_releve_de_notes' => $nombre_releve_de_notes->count(),
+            'nombre_nouveau_adhere' => $nombre_nouveau_adhere->count(),
         ]);
     }
 
@@ -335,6 +339,7 @@ class ElecteursController extends Controller
         $status = 1;
         $secteurs = $request->secteurs;
         $date_inscription = now();
+        $adhesion = $request->adhesion;
 
         $concatenation_nom_prenom = $nom.' '.$prenom;
 
@@ -369,6 +374,7 @@ class ElecteursController extends Controller
                     'secteurs' => $secteurs,
                     'heure_vote' => Carbon::now()->addHour(3),
                     'sympathisant' => $sympathisant,
+                    'adhesion' => $adhesion,
                     'date_inscription' => $date_inscription
                 ]);
                 
@@ -676,6 +682,7 @@ class ElecteursController extends Controller
         $secteurs = $request->secteurs;
         $axes = $request->axes;
         $votes = $request->votes;
+        $adhesion = $request->adhesion;
         $date_inscription = $request->date_inscription;
         $heure_vote = Carbon::now()->addHour(3);
         $electeur = DB::table('electeurs')->where('id', $id)->first();
@@ -725,6 +732,7 @@ class ElecteursController extends Controller
                         'votes' => $votes,
                         'heure_vote' => $heure_vote,
                         'secteurs' => $secteurs,
+                        'adhesion' => $adhesion,
                         'date_inscription' => $date_inscription
                     ]);
                 
