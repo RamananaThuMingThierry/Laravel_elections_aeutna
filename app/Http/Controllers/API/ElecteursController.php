@@ -14,11 +14,12 @@ class ElecteursController extends Controller
 {
     public function statistiques()
     {
+
         $MembresAEUTNA = electeurs::where('numero_carte', '<>', null)->get();
         $ElecteursMembres = electeurs::where('numero_carte', '<>', null)->where('status', 1)->get();
         $ElecteursNonAdheres = electeurs::where('numero_carte', null)->where('status', 1)->get();
         $ElecteursVotes = electeurs::where('status', 1)->get();
-
+        
         $nombre_67h = electeurs::where('secteurs', '67 h')->where('status', 1)->get();
         $nombre_Amphipo = electeurs::where('secteurs', 'Ambohipo')->where('status', 1)->get();
         $nombre_Ambolikandrina = electeurs::where('secteurs', 'Ambolikandrina')->where('status', 1)->get();
@@ -32,12 +33,13 @@ class ElecteursController extends Controller
         $nombre_cin = electeurs::where('votes' , 'C.I.N')->where('status', 1)->get();
         $nombre_copie = electeurs::where('votes' , 'Copie')->where('status', 1)->get();
         $nombre_releve_de_notes = electeurs::where('votes' , 'Relève de notes')->where('status', 1)->get();
-
-
+        
+        $nombre_carte_aeutna = electeurs::where('votes', 'Carte AEUTNA')->where('status', 1)->get();
         $nombre_nouveau_adhere = electeurs::where('adhesion', 1)->where('status', 1)->get();
 
         return response()->json([
             'status' => 200,
+            'nombre_carte_aeutna' => $nombre_carte_aeutna->count(),
             'MembresAEUTNA' => $MembresAEUTNA->count(),
             'ElecteursMembres' => $ElecteursMembres->count(),
             'ElecteursNonAdheres' => $ElecteursNonAdheres->count(),
@@ -56,6 +58,7 @@ class ElecteursController extends Controller
             'nombre_releve_de_notes' => $nombre_releve_de_notes->count(),
             'nombre_nouveau_adhere' => $nombre_nouveau_adhere->count(),
         ]);
+
     }
 
     public function liste_des_electeurs_membres()
@@ -386,7 +389,7 @@ class ElecteursController extends Controller
         }else{
             return response()->json([
                 'status' => 404,
-                'message' => 'Désolé ! L\'électeur existe déjà !'
+                'message' => 'Désolé ! Vous êtes déjà membres!'
             ]);
         }
 
